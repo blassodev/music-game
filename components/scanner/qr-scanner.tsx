@@ -149,12 +149,21 @@ export function QRScanner() {
       {
         fps: 10,
         qrbox: function (viewfinderWidth, viewfinderHeight) {
-          // Make qrbox responsive to container size
+          // Make qrbox responsive to container size with better mobile scaling
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const qrboxSize = Math.floor(minEdge * 0.8); // 80% of the smaller dimension
+          const isMobile = window.innerWidth < 768; // Mobile detection
+          
+          // Use a larger percentage for mobile to make the scanning area more generous
+          const scaleFactor = isMobile ? 0.85 : 0.7;
+          const qrboxSize = Math.floor(minEdge * scaleFactor);
+          
+          // Ensure minimum size for usability
+          const minSize = isMobile ? 200 : 150;
+          const finalSize = Math.max(qrboxSize, minSize);
+          
           return {
-            width: qrboxSize,
-            height: qrboxSize,
+            width: finalSize,
+            height: finalSize,
           };
         },
         aspectRatio: 1.0,
@@ -429,7 +438,7 @@ export function QRScanner() {
               isScanning && !isInitializing ? "block" : "hidden"
             }`}
             style={{
-              height: "400px",
+              height: "450px",
               maxWidth: "100%",
               width: "100%",
             }}
