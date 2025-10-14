@@ -161,8 +161,8 @@ export function QRScanner() {
         disableFlip: false,
         videoConstraints: {
           facingMode: "environment", // Use back camera
-          width: { ideal: 720, min: 480, max: 1280 },
-          height: { ideal: 720, min: 480, max: 1280 },
+          width: { ideal: 1280, min: 480, max: 1920 },
+          height: { ideal: 720, min: 480, max: 1080 },
         },
       },
       (decodedText) => {
@@ -205,16 +205,24 @@ export function QRScanner() {
 
         if (video) {
           video.style.width = "100%";
-          video.style.height = "auto";
+          video.style.height = "100%";
           video.style.maxWidth = "100%";
           video.style.objectFit = "cover";
+          video.style.objectPosition = "center";
         }
 
         if (canvas) {
           canvas.style.width = "100%";
-          canvas.style.height = "auto";
+          canvas.style.height = "100%";
           canvas.style.maxWidth = "100%";
+          canvas.style.position = "absolute";
+          canvas.style.top = "0";
+          canvas.style.left = "0";
         }
+
+        // Make sure the container has proper positioning
+        qrReaderElement.style.position = "relative";
+        qrReaderElement.style.overflow = "hidden";
       }
     }, 500);
 
@@ -417,13 +425,13 @@ export function QRScanner() {
           {/* Always render the qr-reader element, but hide it when not scanning */}
           <div
             id="qr-reader"
-            className={`overflow-hidden rounded-lg border-4 border-primary w-full ${
+            className={`relative overflow-hidden rounded-lg border-4 border-primary w-full ${
               isScanning && !isInitializing ? "block" : "hidden"
             }`}
             style={{
-              minHeight: "350px",
+              height: "400px",
               maxWidth: "100%",
-              aspectRatio: "1/1",
+              width: "100%",
             }}
           >
             {/* El contenido del scanner se renderiza aquí por html5-qrcode */}
@@ -452,34 +460,6 @@ export function QRScanner() {
               </Button>
             </div>
           )}
-
-          <div className="rounded-lg bg-muted p-4 text-xs text-muted-foreground">
-            <p className="font-medium">Tips for best results:</p>
-            <ul className="mt-2 list-inside list-disc space-y-1">
-              <li>Hold card steady in good lighting</li>
-              <li>Keep QR code within the frame</li>
-              <li>Avoid glare and shadows</li>
-            </ul>
-
-            {error && (
-              <>
-                <p className="font-medium mt-4 text-destructive">
-                  Troubleshooting:
-                </p>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-destructive">
-                  <li>Make sure you&apos;re using HTTPS or localhost</li>
-                  <li>Check camera permissions in browser settings</li>
-                  <li>Close other apps that might be using the camera</li>
-                  <li>Try refreshing the page</li>
-                  <li>Use &quot;Check Camera&quot; button to test permissions</li>
-                  <li>
-                    If you see &quot;HTML Element not found&quot;, wait a moment and try
-                    again
-                  </li>
-                </ul>
-              </>
-            )}
-          </div>
         </div>
       </Card>
     </div>
