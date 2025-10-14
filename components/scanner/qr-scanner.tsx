@@ -152,15 +152,15 @@ export function QRScanner() {
           // Make qrbox responsive to container size with better mobile scaling
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
           const isMobile = window.innerWidth < 768; // Mobile detection
-          
+
           // Use a larger percentage for mobile to make the scanning area more generous
           const scaleFactor = isMobile ? 0.85 : 0.7;
           const qrboxSize = Math.floor(minEdge * scaleFactor);
-          
+
           // Ensure minimum size for usability
           const minSize = isMobile ? 200 : 150;
           const finalSize = Math.max(qrboxSize, minSize);
-          
+
           return {
             width: finalSize,
             height: finalSize,
