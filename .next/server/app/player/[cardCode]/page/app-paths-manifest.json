@@ -1,0 +1,3 @@
+{
+  "/player/[cardCode]/page": "app/player/[cardCode]/page.js"
+}
