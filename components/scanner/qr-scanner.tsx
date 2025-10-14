@@ -116,7 +116,7 @@ export function QRScanner() {
     let devices;
     try {
       devices = await Html5Qrcode.getCameras();
-    } catch (err) {
+    } catch {
       throw new Error(
         "Failed to enumerate cameras. Please check your camera permissions."
       );
@@ -467,13 +467,13 @@ export function QRScanner() {
                   Troubleshooting:
                 </p>
                 <ul className="mt-2 list-inside list-disc space-y-1 text-destructive">
-                  <li>Make sure you're using HTTPS or localhost</li>
+                  <li>Make sure you&apos;re using HTTPS or localhost</li>
                   <li>Check camera permissions in browser settings</li>
                   <li>Close other apps that might be using the camera</li>
                   <li>Try refreshing the page</li>
-                  <li>Use "Check Camera" button to test permissions</li>
+                  <li>Use &quot;Check Camera&quot; button to test permissions</li>
                   <li>
-                    If you see "HTML Element not found", wait a moment and try
+                    If you see &quot;HTML Element not found&quot;, wait a moment and try
                     again
                   </li>
                 </ul>
