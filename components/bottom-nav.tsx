@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const t = useTranslations("navigation");
 
   const isAdmin = pathname?.startsWith("/admin");
   const isHome = pathname === "/";
@@ -24,7 +26,7 @@ export function BottomNav() {
           )}
         >
           <Home className="h-6 w-6" />
-          <span className="text-xs font-medium">Scanner</span>
+          <span className="text-xs font-medium">{t("scanner")}</span>
         </Link>
         <Link
           href="/admin"
@@ -36,7 +38,7 @@ export function BottomNav() {
           )}
         >
           <Settings className="h-6 w-6" />
-          <span className="text-xs font-medium">Admin</span>
+          <span className="text-xs font-medium">{t("admin")}</span>
         </Link>
       </div>
     </nav>

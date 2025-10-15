@@ -1,0 +1,105 @@
+{
+  "navigation": {
+    "scanner": "Scanner",
+    "admin": "Admin"
+  },
+  "scanner": {
+    "title": "Scan Music Card",
+    "subtitle": "Point your camera at the QR code on the card",
+    "buttons": {
+      "startScanning": "Start Scanning",
+      "stopScanning": "Stop Scanning",
+      "flashOn": "Flash On",
+      "flashOff": "Flash Off",
+      "testSample": "Test Sample",
+      "checkCamera": "Check Camera"
+    },
+    "messages": {
+      "initializing": "Initializing camera...",
+      "scanSuccess": "Card scanned successfully!",
+      "invalidCard": "Invalid card code",
+      "cameraStarted": "Camera started successfully!",
+      "cameraStopped": "Camera stopped",
+      "testScanSuccess": "Test scan successful!",
+      "cameraPermissionsOk": "Camera permissions OK. Found {count} camera(s)",
+      "camerasAvailable": "{count} camera(s) available"
+    },
+    "errors": {
+      "cameraStart": "Failed to start camera",
+      "elementNotFound": "QR reader element not found. Please try again.",
+      "httpsRequired": "Camera access requires HTTPS. Please use HTTPS or localhost.",
+      "permissionDenied": "Camera permission denied. Please allow camera access and try again.",
+      "noCamera": "No camera found on this device.",
+      "cameraInUse": "Camera is already in use by another application.",
+      "cameraAccess": "Failed to access camera. Please check your camera permissions.",
+      "flashToggle": "Failed to toggle flash",
+      "noCamerasFound": "No cameras found on this device",
+      "permissionCheckFailed": "Camera permission check failed",
+      "permissionDeniedSettings": "Camera permission denied. Please allow camera access in your browser settings.",
+      "constraintsNotSupported": "Camera constraints not supported.",
+      "cameraError": "Camera error: {message}"
+    },
+    "warnings": {
+      "notSecure": "⚠️ Not running in secure context (HTTPS). Camera may not work properly."
+    }
+  },
+  "admin": {
+    "layout": {
+      "title": "Admin Panel",
+      "subtitle": "Manage your music library and decks"
+    },
+    "dashboard": {
+      "stats": {
+        "totalSongs": "Total Songs",
+        "totalDecks": "Total Decks",
+        "totalCards": "Total Cards",
+        "songsDescription": "Songs in your library",
+        "decksDescription": "Active and inactive decks",
+        "cardsDescription": "Cards across all decks"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "manageSongs": "Manage Songs",
+        "manageDecks": "Manage Decks"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "noActivity": "No recent activity to display. Start by managing your songs or decks."
+      }
+    },
+    "navigation": {
+      "dashboard": "Dashboard",
+      "songs": "Songs",
+      "decks": "Decks"
+    }
+  },
+  "player": {
+    "title": "Playing Song",
+    "subtitle": "Listen and guess the song!",
+    "error": {
+      "title": "Playback Error",
+      "message": "Could not load the audio file. Please try again."
+    },
+    "buttons": {
+      "stop": "Stop",
+      "scanAnother": "Scan Another Card"
+    }
+  },
+  "common": {
+    "language": "Language",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

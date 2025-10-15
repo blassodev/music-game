@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import {
   ScanLine,
 } from "lucide-react";
 import { useAudioPlayer } from "@/lib/hooks/use-audio-player";
+import { useTranslations } from "next-intl";
+import { SongsRecord } from "@/lib/types/pocketbase";
+import pb from "@/lib/pocketbase";
 
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -23,12 +26,26 @@ function formatDuration(seconds: number): string {
 }
 
 interface AudioPlayerProps {
-  audioUrl: string;
+  song: SongsRecord;
 }
 
-export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
+export function AudioPlayer({ song }: AudioPlayerProps) {
   const router = useRouter();
-  const { state, playback, play, pause, stop, forward10, backward10 } =
+  const t = useTranslations("player");
+
+  // Generar la URL del audio del lado del cliente
+  const audioUrl = useMemo(() => {
+    if (!song.audio) {
+      console.warn("No audio file available for song:", song.id);
+      return "";
+    }
+
+    const url = pb.files.getURL(song, song.audio);
+    console.log("Generated audio URL for song", song.id, ":", url);
+    return url;
+  }, [song]);
+
+  const { state, playback, play, pause, stop, forward10, backward10, seek } =
     useAudioPlayer(audioUrl);
 
   useEffect(() => {
@@ -37,10 +54,46 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     }
   }, [state, play]);
 
+  const handleSeek = (value: number[]) => {
+    const newTime = value[0];
+    seek(newTime);
+  };
+
   const progress =
     playback.duration > 0
       ? (playback.currentTime / playback.duration) * 100
       : 0;
+
+  // Si no hay URL de audio válida, mostrar error inmediatamente
+  if (!audioUrl) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <h2 className="text-xl font-bold text-destructive mb-4">
+            No hay archivo de audio
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Esta canción no tiene un archivo de audio asociado.
+          </p>
+
+          {/* Debug info */}
+          <div className="mb-6 p-3 bg-muted rounded text-left text-xs space-y-1">
+            <div>
+              <strong>Song ID:</strong> {song.id}
+            </div>
+            <div>
+              <strong>Audio file:</strong> {song.audio || "No audio file"}
+            </div>
+          </div>
+
+          <Button onClick={() => router.push("/")} className="w-full">
+            <ScanLine className="mr-2 h-5 w-5" />
+            {t("buttons.scanAnother")}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (
@@ -66,14 +119,39 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
       <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <h2 className="text-xl font-bold text-destructive mb-4">
-            Playback Error
+            {t("error.title")}
           </h2>
-          <p className="text-muted-foreground mb-6">
-            Could not load the audio file. Please try again.
-          </p>
+          <p className="text-muted-foreground mb-4">{t("error.message")}</p>
+
+          {/* Debug info */}
+          <div className="mb-6 p-3 bg-muted rounded text-left text-xs space-y-1">
+            <div>
+              <strong>Song ID:</strong> {song.id}
+            </div>
+            <div>
+              <strong>Audio file:</strong> {song.audio || "No audio file"}
+            </div>
+            <div>
+              <strong>Generated URL:</strong> {audioUrl || "No URL generated"}
+            </div>
+            {audioUrl && (
+              <div className="mt-2">
+                <strong>Test URL:</strong>{" "}
+                <a
+                  href={audioUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  Click to test
+                </a>
+              </div>
+            )}
+          </div>
+
           <Button onClick={() => router.push("/")} className="w-full">
             <ScanLine className="mr-2 h-5 w-5" />
-            Scan Another Card
+            {t("buttons.scanAnother")}
           </Button>
         </Card>
       </div>
@@ -103,14 +181,25 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
                 ))}
               </div>
             </div>
-            <h2 className="text-2xl font-bold">Playing Song</h2>
+            <h2 className="text-2xl font-bold">{t("title")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Listen and guess the song!
+              {t("subtitle")}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Progress value={progress} className="h-2" />
+            <div className="relative">
+              <Progress value={progress} className="h-2" />
+              <input
+                type="range"
+                min={0}
+                max={playback.duration}
+                value={playback.currentTime}
+                onChange={(e) => handleSeek([Number(e.target.value)])}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                disabled={!playback.duration}
+              />
+            </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{formatDuration(Math.floor(playback.currentTime))}</span>
               <span>{formatDuration(Math.floor(playback.duration))}</span>
@@ -162,7 +251,7 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
             size="lg"
           >
             <Square className="mr-2 h-5 w-5" />
-            Stop
+            {t("buttons.stop")}
           </Button>
 
           <Button
@@ -172,7 +261,7 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
             size="lg"
           >
             <ScanLine className="mr-2 h-5 w-5" />
-            Scan Another Card
+            {t("buttons.scanAnother")}
           </Button>
         </div>
       </Card>

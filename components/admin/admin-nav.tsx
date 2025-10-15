@@ -4,14 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Music, Library, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function AdminNav() {
   const pathname = usePathname();
+  const t = useTranslations("admin.navigation");
 
   const links = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/songs", label: "Songs", icon: Music },
-    { href: "/admin/decks", label: "Decks", icon: Library },
+    { href: "/admin", label: t("dashboard"), icon: LayoutDashboard },
+    { href: "/admin/songs", label: t("songs"), icon: Music },
+    { href: "/admin/decks", label: t("decks"), icon: Library },
   ];
 
   return (

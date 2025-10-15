@@ -4,6 +4,8 @@ import pb from "@/lib/pocketbase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SongsRecord, DecksRecord } from "@/lib/types/pocketbase";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 async function getStats() {
   try {
@@ -34,45 +36,52 @@ async function getStats() {
 
 export default async function AdminDashboard() {
   const { totalSongs, totalDecks, totalCards } = await getStats();
+  const t = await getTranslations("admin.dashboard");
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Songs</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalSongs")}
+            </CardTitle>
             <Music className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSongs}</div>
             <p className="text-xs text-muted-foreground">
-              Songs in your library
+              {t("stats.songsDescription")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Decks</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalDecks")}
+            </CardTitle>
             <Library className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDecks}</div>
             <p className="text-xs text-muted-foreground">
-              Active and inactive decks
+              {t("stats.decksDescription")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cards</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalCards")}
+            </CardTitle>
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCards}</div>
             <p className="text-xs text-muted-foreground">
-              Cards across all decks
+              {t("stats.cardsDescription")}
             </p>
           </CardContent>
         </Card>
@@ -81,19 +90,19 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t("quickActions.title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <Link href="/admin/songs">
               <Button variant="outline" className="w-full justify-start">
                 <Music className="mr-2 h-4 w-4" />
-                Manage Songs
+                {t("quickActions.manageSongs")}
               </Button>
             </Link>
             <Link href="/admin/decks">
               <Button variant="outline" className="w-full justify-start">
                 <Library className="mr-2 h-4 w-4" />
-                Manage Decks
+                {t("quickActions.manageDecks")}
               </Button>
             </Link>
           </CardContent>
@@ -101,12 +110,11 @@ export default async function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>{t("recentActivity.title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              No recent activity to display. Start by managing your songs or
-              decks.
+              {t("recentActivity.noActivity")}
             </p>
           </CardContent>
         </Card>

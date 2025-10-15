@@ -28,5 +28,10 @@ export default async function PlayerPage({
     notFound();
   }
 
-  return <AudioPlayer audioUrl={song.audio} />;
+  if (!song.audio) {
+    notFound();
+  }
+
+  // Pasar la canción completa al componente para que genere la URL del lado del cliente
+  return <AudioPlayer song={song} />;
 }

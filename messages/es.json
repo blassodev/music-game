@@ -1,0 +1,105 @@
+{
+  "navigation": {
+    "scanner": "Escáner",
+    "admin": "Administración"
+  },
+  "scanner": {
+    "title": "Escanear Carta Musical",
+    "subtitle": "Apunta tu cámara al código QR de la carta",
+    "buttons": {
+      "startScanning": "Iniciar Escaneo",
+      "stopScanning": "Detener Escaneo",
+      "flashOn": "Flash Encendido",
+      "flashOff": "Flash Apagado",
+      "testSample": "Probar Muestra",
+      "checkCamera": "Verificar Cámara"
+    },
+    "messages": {
+      "initializing": "Inicializando cámara...",
+      "scanSuccess": "¡Carta escaneada exitosamente!",
+      "invalidCard": "Código de carta inválido",
+      "cameraStarted": "¡Cámara iniciada exitosamente!",
+      "cameraStopped": "Cámara detenida",
+      "testScanSuccess": "¡Escaneo de prueba exitoso!",
+      "cameraPermissionsOk": "Permisos de cámara OK. Se encontraron {count} cámara(s)",
+      "camerasAvailable": "{count} cámara(s) disponible(s)"
+    },
+    "errors": {
+      "cameraStart": "Error al iniciar la cámara",
+      "elementNotFound": "Elemento del lector QR no encontrado. Por favor intenta de nuevo.",
+      "httpsRequired": "El acceso a la cámara requiere HTTPS. Por favor usa HTTPS o localhost.",
+      "permissionDenied": "Permiso de cámara denegado. Por favor permite el acceso a la cámara e intenta de nuevo.",
+      "noCamera": "No se encontró cámara en este dispositivo.",
+      "cameraInUse": "La cámara ya está siendo usada por otra aplicación.",
+      "cameraAccess": "Error al acceder a la cámara. Por favor verifica los permisos de cámara.",
+      "flashToggle": "Error al alternar el flash",
+      "noCamerasFound": "No se encontraron cámaras en este dispositivo",
+      "permissionCheckFailed": "Error al verificar permisos de cámara",
+      "permissionDeniedSettings": "Permiso de cámara denegado. Por favor permite el acceso a la cámara en la configuración de tu navegador.",
+      "constraintsNotSupported": "Restricciones de cámara no soportadas.",
+      "cameraError": "Error de cámara: {message}"
+    },
+    "warnings": {
+      "notSecure": "⚠️ No se está ejecutando en contexto seguro (HTTPS). La cámara puede no funcionar correctamente."
+    }
+  },
+  "admin": {
+    "layout": {
+      "title": "Panel de Administración",
+      "subtitle": "Gestiona tu biblioteca de música y mazos"
+    },
+    "dashboard": {
+      "stats": {
+        "totalSongs": "Total de Canciones",
+        "totalDecks": "Total de Mazos",
+        "totalCards": "Total de Cartas",
+        "songsDescription": "Canciones en tu biblioteca",
+        "decksDescription": "Mazos activos e inactivos",
+        "cardsDescription": "Cartas en todos los mazos"
+      },
+      "quickActions": {
+        "title": "Acciones Rápidas",
+        "manageSongs": "Gestionar Canciones",
+        "manageDecks": "Gestionar Mazos"
+      },
+      "recentActivity": {
+        "title": "Actividad Reciente",
+        "noActivity": "No hay actividad reciente para mostrar. Comienza gestionando tus canciones o mazos."
+      }
+    },
+    "navigation": {
+      "dashboard": "Panel",
+      "songs": "Canciones",
+      "decks": "Mazos"
+    }
+  },
+  "player": {
+    "title": "Reproduciendo Canción",
+    "subtitle": "¡Escucha y adivina la canción!",
+    "error": {
+      "title": "Error de Reproducción",
+      "message": "No se pudo cargar el archivo de audio. Por favor intenta de nuevo."
+    },
+    "buttons": {
+      "stop": "Detener",
+      "scanAnother": "Escanear Otra Carta"
+    }
+  },
+  "common": {
+    "language": "Idioma",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No"
+  }
+}

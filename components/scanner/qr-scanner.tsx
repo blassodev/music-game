@@ -10,6 +10,7 @@ import { Flashlight, QrCode, Scan } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { SongsRecord } from "@/lib/types/pocketbase";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 async function validateCardCode(cardCode: string): Promise<boolean> {
   try {
@@ -23,6 +24,7 @@ async function validateCardCode(cardCode: string): Promise<boolean> {
 
 export function QRScanner() {
   const router = useRouter();
+  const t = useTranslations("scanner");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function QRScanner() {
 
   const handleScannerError = (err: unknown) => {
     console.error("Scanner error:", err);
-    let errorMsg = "Failed to start camera";
+    let errorMsg = t("errors.cameraStart");
 
     if (err instanceof Error) {
       errorMsg = err.message;
@@ -72,7 +74,7 @@ export function QRScanner() {
     // Check if the qr-reader element exists
     const qrReaderElement = document.getElementById("qr-reader");
     if (!qrReaderElement) {
-      throw new Error("QR reader element not found. Please try again.");
+      throw new Error(t("errors.elementNotFound"));
     }
 
     // Check if we're running on HTTPS or localhost
@@ -82,9 +84,7 @@ export function QRScanner() {
       !window.location.hostname.includes("localhost") &&
       window.location.hostname !== "127.0.0.1"
     ) {
-      throw new Error(
-        "Camera access requires HTTPS. Please use HTTPS or localhost."
-      );
+      throw new Error(t("errors.httpsRequired"));
     }
 
     // Request camera permissions explicitly
@@ -94,18 +94,14 @@ export function QRScanner() {
     } catch (permissionError) {
       if (permissionError instanceof DOMException) {
         if (permissionError.name === "NotAllowedError") {
-          throw new Error(
-            "Camera permission denied. Please allow camera access and try again."
-          );
+          throw new Error(t("errors.permissionDenied"));
         } else if (permissionError.name === "NotFoundError") {
-          throw new Error("No camera found on this device.");
+          throw new Error(t("errors.noCamera"));
         } else if (permissionError.name === "NotReadableError") {
-          throw new Error("Camera is already in use by another application.");
+          throw new Error(t("errors.cameraInUse"));
         }
       }
-      throw new Error(
-        "Failed to access camera. Please check your camera permissions."
-      );
+      throw new Error(t("errors.cameraAccess"));
     }
 
     // Clean up any existing scanner instance
@@ -128,13 +124,11 @@ export function QRScanner() {
     try {
       devices = await Html5Qrcode.getCameras();
     } catch {
-      throw new Error(
-        "Failed to enumerate cameras. Please check your camera permissions."
-      );
+      throw new Error(t("errors.enumerateCameras"));
     }
 
     if (!devices || devices.length === 0) {
-      throw new Error("No cameras found on this device");
+      throw new Error(t("errors.noCamerasFound"));
     }
 
     console.log("Available cameras:", devices);
@@ -189,7 +183,7 @@ export function QRScanner() {
         console.log("QR Code detected:", decodedText);
         const isValid = await validateCardCode(decodedText);
         if (isValid) {
-          toast.success("Card scanned successfully!");
+          toast.success(t("messages.scanSuccess"));
           scanner
             .stop()
             .then(() => {
@@ -197,7 +191,7 @@ export function QRScanner() {
             })
             .catch(console.error);
         } else {
-          toast.error("Invalid card code: " + decodedText);
+          toast.error(t("messages.invalidCard") + ": " + decodedText);
         }
       },
       (errorMessage) => {
@@ -247,7 +241,7 @@ export function QRScanner() {
       }
     }, 500);
 
-    toast.success("Camera started successfully!");
+    toast.success(t("messages.cameraStarted"));
   };
 
   const startScanning = async () => {
@@ -279,7 +273,7 @@ export function QRScanner() {
         setIsScanning(false);
         setIsFlashOn(false);
         setCameraInfo("");
-        toast.success("Camera stopped");
+        toast.success(t("messages.cameraStopped"));
       } catch (err) {
         console.error("Error stopping scanner:", err);
         setIsScanning(false);
@@ -302,7 +296,7 @@ export function QRScanner() {
           setIsFlashOn(!isFlashOn);
         }
       } catch {
-        toast.error("Failed to toggle flash");
+        toast.error(t("errors.flashToggle"));
       }
     }
   };
@@ -316,7 +310,7 @@ export function QRScanner() {
       );
 
       if (videoDevices.length === 0) {
-        throw new Error("No cameras found on this device");
+        throw new Error(t("errors.noCamerasFound"));
       }
 
       // Try to access camera
@@ -330,29 +324,30 @@ export function QRScanner() {
       stream.getTracks().forEach((track) => track.stop());
 
       toast.success(
-        `Camera permissions OK. Found ${videoDevices.length} camera(s)`
+        t("messages.cameraPermissionsOk", { count: videoDevices.length })
       );
-      setCameraInfo(`${videoDevices.length} camera(s) available`);
+      setCameraInfo(
+        t("messages.camerasAvailable", { count: videoDevices.length })
+      );
     } catch (err) {
-      let errorMsg = "Camera permission check failed";
+      let errorMsg = t("errors.permissionCheckFailed");
 
       if (err instanceof DOMException) {
         switch (err.name) {
           case "NotAllowedError":
-            errorMsg =
-              "Camera permission denied. Please allow camera access in your browser settings.";
+            errorMsg = t("errors.permissionDeniedSettings");
             break;
           case "NotFoundError":
-            errorMsg = "No camera found on this device.";
+            errorMsg = t("errors.noCamera");
             break;
           case "NotReadableError":
-            errorMsg = "Camera is already in use by another application.";
+            errorMsg = t("errors.cameraInUse");
             break;
           case "OverconstrainedError":
-            errorMsg = "Camera constraints not supported.";
+            errorMsg = t("errors.constraintsNotSupported");
             break;
           default:
-            errorMsg = `Camera error: ${err.message}`;
+            errorMsg = t("errors.cameraError", { message: err.message });
         }
       } else if (err instanceof Error) {
         errorMsg = err.message;
@@ -365,7 +360,7 @@ export function QRScanner() {
 
   const simulateScan = () => {
     const testCode = "CARD-ROCK-001-A1B2";
-    toast.success("Test scan successful!");
+    toast.success(t("messages.testScanSuccess"));
     router.push(`/player/${testCode}`);
   };
 
@@ -377,9 +372,9 @@ export function QRScanner() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <QrCode className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold">Scan Music Card</h1>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Point your camera at the QR code on the card
+              {t("subtitle")}
             </p>
           </div>
 
@@ -392,10 +387,7 @@ export function QRScanner() {
           {/* Debug information */}
           {!isSecureContext && (
             <Alert>
-              <AlertDescription>
-                ⚠️ Not running in secure context (HTTPS). Camera may not work
-                properly.
-              </AlertDescription>
+              <AlertDescription>{t("warnings.notSecure")}</AlertDescription>
             </Alert>
           )}
 
@@ -413,7 +405,7 @@ export function QRScanner() {
                 size="lg"
               >
                 <Scan className="mr-2 h-5 w-5" />
-                Start Scanning
+                {t("buttons.startScanning")}
               </Button>
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -421,14 +413,14 @@ export function QRScanner() {
                   variant="outline"
                   className="h-10 text-sm"
                 >
-                  Check Camera
+                  {t("buttons.checkCamera")}
                 </Button>
                 <Button
                   onClick={simulateScan}
                   variant="outline"
                   className="h-10 text-sm"
                 >
-                  Test Sample
+                  {t("buttons.testSample")}
                 </Button>
               </div>
             </div>
@@ -438,7 +430,7 @@ export function QRScanner() {
             <div className="flex flex-col items-center space-y-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               <p className="text-sm text-muted-foreground">
-                Initializing camera...
+                {t("messages.initializing")}
               </p>
             </div>
           )}
@@ -468,7 +460,7 @@ export function QRScanner() {
                   size="lg"
                 >
                   <Flashlight className="mr-2 h-5 w-5" />
-                  {isFlashOn ? "Flash On" : "Flash Off"}
+                  {isFlashOn ? t("buttons.flashOn") : t("buttons.flashOff")}
                 </Button>
               )}
               <Button
@@ -477,7 +469,7 @@ export function QRScanner() {
                 className="flex-1 h-12"
                 size="lg"
               >
-                Stop Scanning
+                {t("buttons.stopScanning")}
               </Button>
             </div>
           )}
