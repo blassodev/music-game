@@ -7,8 +7,19 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Flashlight, QrCode, Scan } from "lucide-react";
-import { validateCardCode } from "@/lib/mock-data";
+import pb from "@/lib/pocketbase";
+import { SongsRecord } from "@/lib/types/pocketbase";
 import { toast } from "sonner";
+
+async function validateCardCode(cardCode: string): Promise<boolean> {
+  try {
+    // En el nuevo sistema, el código QR debería ser el ID de una canción
+    const song = await pb.collection("songs").getOne<SongsRecord>(cardCode);
+    return !!song;
+  } catch (error) {
+    return false;
+  }
+}
 
 export function QRScanner() {
   const router = useRouter();
@@ -174,9 +185,10 @@ export function QRScanner() {
           height: { ideal: 720, min: 480, max: 1080 },
         },
       },
-      (decodedText) => {
+      async (decodedText) => {
         console.log("QR Code detected:", decodedText);
-        if (validateCardCode(decodedText)) {
+        const isValid = await validateCardCode(decodedText);
+        if (isValid) {
           toast.success("Card scanned successfully!");
           scanner
             .stop()

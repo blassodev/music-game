@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -13,18 +13,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Play, Edit, Trash2 } from "lucide-react";
-import { getAllSongs, formatDuration } from "@/lib/mock-data";
+import pb from "@/lib/pocketbase";
+import { SongsRecord } from "@/lib/types/pocketbase";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SongQRCode } from "@/components/song-qr-code";
+import { AudioPlayerModal } from "@/components/audio-player-modal";
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
 
 export default function SongsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const songs = getAllSongs();
+  const [songs, setSongs] = useState<SongsRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSongs = async () => {
+      try {
+        const songsList = await pb
+          .collection("songs")
+          .getFullList<SongsRecord>();
+        setSongs(songsList);
+      } catch (error) {
+        console.error("Error fetching songs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSongs();
+  }, []);
+
+  if (loading) {
+    return <div>Cargando canciones...</div>;
+  }
 
   const filteredSongs = songs.filter(
     (song) =>
-      song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      song.album.toLowerCase().includes(searchQuery.toLowerCase())
+      song.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      song.artist?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      song.album?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -67,26 +98,35 @@ export default function SongsPage() {
                     <TableHead>Title</TableHead>
                     <TableHead>Artist</TableHead>
                     <TableHead>Album</TableHead>
-                    <TableHead>Duration</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead>QR Code</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSongs.map((song) => (
                     <TableRow key={song.id}>
-                      <TableCell className="font-medium">{song.title}</TableCell>
+                      <TableCell className="font-medium">
+                        {song.title}
+                      </TableCell>
                       <TableCell>{song.artist}</TableCell>
                       <TableCell>{song.album}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          {formatDuration(song.duration)}
-                        </Badge>
+                        <Badge variant="secondary">{song.year}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <SongQRCode songId={song.id} songTitle={song.title} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="ghost">
-                            <Play className="h-4 w-4" />
-                          </Button>
+                          <AudioPlayerModal
+                            song={song}
+                            trigger={
+                              <Button size="sm" variant="ghost">
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
                           <Button size="sm" variant="ghost">
                             <Edit className="h-4 w-4" />
                           </Button>

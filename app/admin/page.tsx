@@ -1,13 +1,39 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Music, Library, Layers } from "lucide-react";
-import { getAllSongs, getAllDecks, mockDeckCards } from "@/lib/mock-data";
+import pb from "@/lib/pocketbase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { SongsRecord, DecksRecord } from "@/lib/types/pocketbase";
 
-export default function AdminDashboard() {
-  const totalSongs = getAllSongs().length;
-  const totalDecks = getAllDecks().length;
-  const totalCards = mockDeckCards.length;
+async function getStats() {
+  try {
+    const [songs, decks] = await Promise.all([
+      pb.collection("songs").getFullList<SongsRecord>(),
+      pb.collection("decks").getFullList<DecksRecord>(),
+    ]);
+
+    // Calcular total de cartas basado en las canciones en los decks
+    const totalCards = decks.reduce((total, deck) => {
+      return total + (deck.songs?.length || 0);
+    }, 0);
+
+    return {
+      totalSongs: songs.length,
+      totalDecks: decks.length,
+      totalCards,
+    };
+  } catch (error) {
+    console.error("Error fetching stats:", error);
+    return {
+      totalSongs: 0,
+      totalDecks: 0,
+      totalCards: 0,
+    };
+  }
+}
+
+export default async function AdminDashboard() {
+  const { totalSongs, totalDecks, totalCards } = await getStats();
 
   return (
     <div className="space-y-6">

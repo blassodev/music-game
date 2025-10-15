@@ -15,7 +15,12 @@ import {
   ScanLine,
 } from "lucide-react";
 import { useAudioPlayer } from "@/lib/hooks/use-audio-player";
-import { formatDuration } from "@/lib/mock-data";
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
 
 interface AudioPlayerProps {
   audioUrl: string;

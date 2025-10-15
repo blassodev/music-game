@@ -1,22 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Library, Edit, Trash2 } from "lucide-react";
-import { getAllDecks, getCardsByDeckId } from "@/lib/mock-data";
+import pb from "@/lib/pocketbase";
+import { DecksRecord } from "@/lib/types/pocketbase";
 
 export default function DecksPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const decks = getAllDecks();
+  const [decks, setDecks] = useState<DecksRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDecks = async () => {
+      try {
+        const decksList = await pb
+          .collection("decks")
+          .getFullList<DecksRecord>();
+        setDecks(decksList);
+      } catch (error) {
+        console.error("Error fetching decks:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDecks();
+  }, []);
+
+  if (loading) {
+    return <div>Cargando decks...</div>;
+  }
 
   const filteredDecks = decks.filter(
     (deck) =>
-      deck.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deck.description.toLowerCase().includes(searchQuery.toLowerCase())
+      deck.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      deck.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -53,15 +76,13 @@ export default function DecksPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredDecks.map((deck) => {
-            const cardCount = getCardsByDeckId(deck.id).length;
+            const cardCount = deck.songs?.length || 0;
             return (
               <Card key={deck.id} className="overflow-hidden">
                 <CardHeader className="bg-muted/50">
                   <div className="flex items-start justify-between">
                     <Library className="h-8 w-8 text-primary" />
-                    <Badge variant={deck.isActive ? "default" : "secondary"}>
-                      {deck.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                    <Badge variant="default">{cardCount} songs</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">

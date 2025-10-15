@@ -1,167 +1,293 @@
-import { Song, Deck, DeckCard } from "./types";
+import { SongsRecord, DecksRecord } from "./types/pocketbase";import { Song, Deck } from "./types";
 
-export const mockSongs: Song[] = [
+
+
+// Datos de ejemplo (para desarrollo y testing)// Datos de ejemplo (para desarrollo y testing)
+
+export const mockSongs: SongsRecord[] = [import { Song, Deck, Collections } from "./types";
+
   {
-    id: "1",
-    title: "Bohemian Rhapsody",
-    artist: "Queen",
-    album: "A Night at the Opera",
-    duration: 354,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: "2",
-    title: "Stairway to Heaven",
-    artist: "Led Zeppelin",
-    album: "Led Zeppelin IV",
-    duration: 482,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-  },
-  {
-    id: "3",
-    title: "Hotel California",
-    artist: "Eagles",
-    album: "Hotel California",
-    duration: 391,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  },
-  {
+
+    id: "1",// Datos de ejemplo (para desarrollo y testing)
+
+    collectionId: "songs",export const mockSongs: Song[] = [
+
+    collectionName: "songs",  {
+
+    created: "2023-01-01T00:00:00.000Z",    id: "1",
+
+    updated: "2023-01-01T00:00:00.000Z",    collectionId: "songs",
+
+    title: "Bohemian Rhapsody",    collectionName: Collections.Songs,
+
+    artist: "Queen",    title: "Bohemian Rhapsody",
+
+    file: "",    artist: "Queen",
+
+    image_cover: "",    album: "A Night at the Opera",
+
+    duration: 355,    year: 1975,
+
+    genre: "Rock",    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+
+  },    createdAt: new Date().toISOString(),
+
+  {    updatedAt: new Date().toISOString(),
+
+    id: "2",  },
+
+    collectionId: "songs",  {
+
+    collectionName: "songs",    id: "2",
+
+    created: "2023-01-01T00:00:00.000Z",    collectionId: "songs",
+
+    updated: "2023-01-01T00:00:00.000Z",    collectionName: Collections.Songs,
+
+    title: "Hotel California",    title: "Stairway to Heaven",
+
+    artist: "Eagles",    artist: "Led Zeppelin",
+
+    file: "",    album: "Led Zeppelin IV",
+
+    image_cover: "",    year: 1971,
+
+    duration: 391,    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+
+    genre: "Rock",    createdAt: new Date().toISOString(),
+
+  },    updatedAt: new Date().toISOString(),
+
+  {  },
+
+    id: "3",  {
+
+    collectionId: "songs",    id: "3",
+
+    collectionName: "songs",    collectionId: "songs",
+
+    created: "2023-01-01T00:00:00.000Z",    collectionName: Collections.Songs,
+
+    updated: "2023-01-01T00:00:00.000Z",    title: "Hotel California",
+
+    title: "Imagine",    artist: "Eagles",
+
+    artist: "John Lennon",    album: "Hotel California",
+
+    file: "",    year: 1977,
+
+    image_cover: "",    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+
+    duration: 183,    createdAt: new Date().toISOString(),
+
+    genre: "Pop",    updatedAt: new Date().toISOString(),
+
+  },  },
+
+];  {
+
     id: "4",
-    title: "Imagine",
-    artist: "John Lennon",
-    album: "Imagine",
-    duration: 183,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-  },
+
+export const mockDecks: DecksRecord[] = [    collectionId: "songs",
+
+  {    collectionName: Collections.Songs,
+
+    id: "deck1",    title: "Imagine",
+
+    collectionId: "decks",    artist: "John Lennon",
+
+    collectionName: "decks",    album: "Imagine",
+
+    created: "2023-01-01T00:00:00.000Z",    year: 1971,
+
+    updated: "2023-01-01T00:00:00.000Z",    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+
+    name: "Rock Classics",    createdAt: new Date().toISOString(),
+
+    description: "Las mejores canciones de rock de todos los tiempos",    updatedAt: new Date().toISOString(),
+
+    songs: ["1", "2"], // Relación múltiple con canciones  },
+
+  },  {
+
+  {    id: "5",
+
+    id: "deck2",    collectionId: "songs",
+
+    collectionId: "decks",    collectionName: Collections.Songs,
+
+    collectionName: "decks",    title: "Sweet Child O' Mine",
+
+    created: "2023-01-01T00:00:00.000Z",    artist: "Guns N' Roses",
+
+    updated: "2023-01-01T00:00:00.000Z",    album: "Appetite for Destruction",
+
+    name: "Pop Hits",    year: 1987,
+
+    description: "Los éxitos pop más populares",    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+
+    songs: ["3"], // Relación múltiple con canciones    createdAt: new Date().toISOString(),
+
+  },    updatedAt: new Date().toISOString(),
+
+];  },
+
   {
-    id: "5",
-    title: "Sweet Child O' Mine",
-    artist: "Guns N' Roses",
-    album: "Appetite for Destruction",
-    duration: 356,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-  },
-  {
-    id: "6",
-    title: "Smells Like Teen Spirit",
+
+// Funciones auxiliares para obtener datos    id: "6",
+
+export function getAllSongs(): SongsRecord[] {    collectionId: "songs",
+
+  return mockSongs;    collectionName: Collections.Songs,
+
+}    title: "Smells Like Teen Spirit",
+
     artist: "Nirvana",
-    album: "Nevermind",
-    duration: 301,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-  },
-  {
+
+export function getAllDecks(): DecksRecord[] {    album: "Nevermind",
+
+  return mockDecks;    year: 1991,
+
+}    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+
+    createdAt: new Date().toISOString(),
+
+export function getSongById(id: string): SongsRecord | undefined {    updatedAt: new Date().toISOString(),
+
+  return mockSongs.find((song) => song.id === id);  },
+
+}  {
+
     id: "7",
-    title: "Billie Jean",
+
+export function getDeckById(id: string): DecksRecord | undefined {    collectionId: "songs",
+
+  return mockDecks.find((deck) => deck.id === id);    collectionName: Collections.Songs,
+
+}    title: "Billie Jean",
+
     artist: "Michael Jackson",
-    album: "Thriller",
-    duration: 294,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-  },
+
+export function getSongsByDeckId(deckId: string): SongsRecord[] {    album: "Thriller",
+
+  const deck = getDeckById(deckId);    year: 1982,
+
+  if (!deck || !deck.songs) return [];    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+
+      createdAt: new Date().toISOString(),
+
+  return mockSongs.filter((song) => deck.songs!.includes(song.id));    updatedAt: new Date().toISOString(),
+
+}  },
+
   {
-    id: "8",
-    title: "Purple Rain",
+
+// Función para generar código QR único (simulado)    id: "8",
+
+export function generateCardCode(): string {    collectionId: "songs",
+
+  return Math.random().toString(36).substring(2, 15);    collectionName: Collections.Songs,
+
+}    title: "Purple Rain",
     artist: "Prince",
     album: "Purple Rain",
-    duration: 508,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    year: 1984,
+    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "9",
+    collectionId: "songs",
+    collectionName: Collections.Songs,
     title: "Wonderwall",
     artist: "Oasis",
     album: "(What's the Story) Morning Glory?",
-    duration: 258,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    year: 1995,
+    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "10",
+    collectionId: "songs",
+    collectionName: Collections.Songs,
     title: "Hey Jude",
     artist: "The Beatles",
     album: "Hey Jude",
-    duration: 431,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-  },
-  {
-    id: "11",
-    title: "Back in Black",
-    artist: "AC/DC",
-    album: "Back in Black",
-    duration: 255,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  },
-  {
-    id: "12",
-    title: "Like a Rolling Stone",
-    artist: "Bob Dylan",
-    album: "Highway 61 Revisited",
-    duration: 370,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-  },
-  {
-    id: "13",
-    title: "What's Going On",
-    artist: "Marvin Gaye",
-    album: "What's Going On",
-    duration: 232,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-  },
-  {
-    id: "14",
-    title: "Good Vibrations",
-    artist: "The Beach Boys",
-    album: "Smiley Smile",
-    duration: 216,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-  },
-  {
-    id: "15",
-    title: "Johnny B. Goode",
-    artist: "Chuck Berry",
-    album: "Chuck Berry Is on Top",
-    duration: 161,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-  },
-  {
-    id: "16",
-    title: "Born to Run",
-    artist: "Bruce Springsteen",
-    album: "Born to Run",
-    duration: 270,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-  },
-  {
-    id: "17",
-    title: "Whole Lotta Love",
-    artist: "Led Zeppelin",
-    album: "Led Zeppelin II",
-    duration: 334,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  },
-  {
-    id: "18",
-    title: "Light My Fire",
-    artist: "The Doors",
-    album: "The Doors",
-    duration: 427,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-  },
-  {
-    id: "19",
-    title: "Respect",
-    artist: "Aretha Franklin",
-    album: "I Never Loved a Man the Way I Love You",
-    duration: 147,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  },
-  {
-    id: "20",
-    title: "One",
-    artist: "U2",
-    album: "Achtung Baby",
-    duration: 276,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    year: 1968,
+    audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
+
+export const mockDecks: Deck[] = [
+  {
+    id: "deck-1",
+    collectionId: "decks",
+    collectionName: Collections.Decks,
+    name: "Rock Classics",
+    description: "The greatest rock songs of all time",
+    isActive: true,
+    songs: ["1", "2", "3", "5"], // IDs de las canciones asociadas
+    created: "2024-01-15T10:00:00Z",
+    updated: "2024-01-15T10:00:00Z",
+  },
+  {
+    id: "deck-2",
+    collectionId: "decks",
+    collectionName: Collections.Decks,
+    name: "80s Hits",
+    description: "Memorable hits from the 1980s",
+    isActive: true,
+    songs: ["7", "8"], // IDs de las canciones asociadas
+    created: "2024-02-20T14:30:00Z",
+    updated: "2024-02-20T14:30:00Z",
+  },
+  {
+    id: "deck-3",
+    collectionId: "decks",
+    collectionName: Collections.Decks,
+    name: "Soul & Funk",
+    description: "Soul and funk music legends",
+    isActive: true,
+    songs: ["4", "10"], // IDs de las canciones asociadas
+    created: "2024-03-10T09:15:00Z",
+    updated: "2024-03-10T09:15:00Z",
+  },
+];
+
+// Funciones helper para trabajar con los datos mock
+export function getAllSongs(): Song[] {
+  return mockSongs;
+}
+
+export function getSongById(id: string): Song | null {
+  return mockSongs.find((s) => s.id === id) || null;
+}
+
+export function getAllDecks(): Deck[] {
+  return mockDecks;
+}
+
+export function getDeckById(id: string): Deck | null {
+  return mockDecks.find((d) => d.id === id) || null;
+}
+
+export function getSongsByDeckId(deckId: string): Song[] {
+  const deck = getDeckById(deckId);
+  if (!deck || !deck.songs) return [];
+  
+  return deck.songs
+    .map(songId => getSongById(songId))
+    .filter((song): song is Song => song !== null);
+}
+
+// Función para simular la búsqueda por código QR (usando el ID de la canción como código)
+export function getSongByQRCode(qrCode: string): Song | null {
+  return getSongById(qrCode);
+}
 
 export const mockDecks: Deck[] = [
   {

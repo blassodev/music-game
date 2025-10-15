@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import {
-  getDeckById,
-  getCardsByDeckId,
-  getSongById,
-} from "@/lib/mock-data";
+import pb from "@/lib/pocketbase";
+import { DecksRecord, SongsRecord } from "@/lib/types/pocketbase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SongQRCode } from "@/components/song-qr-code";
+import { AudioPlayerModal } from "@/components/audio-player-modal";
 import {
   Table,
   TableBody,
@@ -15,9 +14,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ArrowLeft, QrCode, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Plus,
+  ArrowLeft,
+  QrCode,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Play,
+} from "lucide-react";
 import Link from "next/link";
-import { QRCodeDisplay } from "@/components/admin/qr-code-display";
+
+async function getDeckWithSongs(id: string) {
+  try {
+    const deck = await pb.collection("decks").getOne<DecksRecord>(id);
+    let songs: SongsRecord[] = [];
+
+    if (deck.songs && deck.songs.length > 0) {
+      // Obtener todas las canciones del deck
+      songs = await pb.collection("songs").getFullList<SongsRecord>({
+        filter: deck.songs.map((songId) => `id='${songId}'`).join(" || "),
+      });
+    }
+
+    return { deck, songs };
+  } catch (error) {
+    console.error("Error fetching deck:", error);
+    return null;
+  }
+}
 
 export default async function DeckDetailPage({
   params,
@@ -25,19 +50,13 @@ export default async function DeckDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const deck = getDeckById(id);
+  const result = await getDeckWithSongs(id);
 
-  if (!deck) {
+  if (!result) {
     notFound();
   }
 
-  const cards = getCardsByDeckId(id);
-  const cardsWithSongs = cards
-    .map((card) => {
-      const song = getSongById(card.songId);
-      return song ? { ...card, song } : null;
-    })
-    .filter((card): card is NonNullable<typeof card> => card !== null);
+  const { deck, songs } = result;
 
   return (
     <div className="space-y-6">
@@ -73,7 +92,7 @@ export default async function DeckDetailPage({
             <CardTitle className="text-sm font-medium">Total Cards</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{cards.length}</div>
+            <div className="text-2xl font-bold">{songs.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -92,7 +111,9 @@ export default async function DeckDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-lg font-medium">
-              {new Date(deck.createdAt).toLocaleDateString()}
+              {deck.created
+                ? new Date(deck.created).toLocaleDateString()
+                : "N/A"}
             </div>
           </CardContent>
         </Card>
@@ -103,7 +124,7 @@ export default async function DeckDetailPage({
           <CardTitle>Deck Cards</CardTitle>
         </CardHeader>
         <CardContent>
-          {cardsWithSongs.length === 0 ? (
+          {songs.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground">
                 No cards in this deck yet. Add some songs to get started.
@@ -123,25 +144,31 @@ export default async function DeckDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {cardsWithSongs.map((card) => (
-                    <TableRow key={card.id}>
-                      <TableCell className="font-medium">
-                        {card.position}
-                      </TableCell>
+                  {songs.map((song, index) => (
+                    <TableRow key={song.id}>
+                      <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>
                         <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {card.cardCode}
+                          {song.id}
                         </code>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {card.song.title}
+                        {song.title}
                       </TableCell>
-                      <TableCell>{card.song.artist}</TableCell>
+                      <TableCell>{song.artist}</TableCell>
                       <TableCell>
-                        <QRCodeDisplay cardCode={card.cardCode} size={40} />
+                        <SongQRCode songId={song.id} songTitle={song.title} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <AudioPlayerModal
+                            song={song}
+                            trigger={
+                              <Button size="sm" variant="ghost">
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
                           <Button size="sm" variant="ghost">
                             <ArrowUp className="h-4 w-4" />
                           </Button>

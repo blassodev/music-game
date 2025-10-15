@@ -1,30 +1,28 @@
-export interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  duration: number;
-  audioUrl: string;
-  coverUrl?: string;
-}
+// Re-export PocketBase types
+export * from "./pocketbase";
 
-export interface Deck {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-  createdAt: string;
-}
+// Import the PocketBase types we'll extend or alias
+import {
+  SongsRecord,
+  SongsResponse,
+  DecksRecord,
+  DecksResponse,
+} from "./pocketbase";
 
-export interface DeckCard {
-  id: string;
-  deckId: string;
-  songId: string;
-  cardCode: string;
-  position: number;
-}
+// Alias PocketBase types for easier usage
+export type Song = SongsResponse;
+export type SongRecord = SongsRecord;
+export type Deck = DecksResponse;
+export type DeckRecord = DecksRecord;
 
-export type PlayerState = "idle" | "loading" | "playing" | "paused" | "stopped" | "error";
+// Additional UI types
+export type PlayerState =
+  | "idle"
+  | "loading"
+  | "playing"
+  | "paused"
+  | "stopped"
+  | "error";
 
 export interface PlaybackStatus {
   currentTime: number;
