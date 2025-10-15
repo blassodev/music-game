@@ -96,11 +96,16 @@ export function UrlImportForm() {
 
       // Seleccionar automáticamente la mejor calidad disponible
       if (data.qualities && data.qualities.length > 0) {
-        const bestQuality = data.qualities.reduce((best: VideoInfo['qualities'][0], current: VideoInfo['qualities'][0]) => {
-          return (current.audioBitrate || 0) > (best.audioBitrate || 0)
-            ? current
-            : best;
-        });
+        const bestQuality = data.qualities.reduce(
+          (
+            best: VideoInfo["qualities"][0],
+            current: VideoInfo["qualities"][0]
+          ) => {
+            return (current.audioBitrate || 0) > (best.audioBitrate || 0)
+              ? current
+              : best;
+          }
+        );
         setSelectedQuality(bestQuality.itag.toString());
       }
 
