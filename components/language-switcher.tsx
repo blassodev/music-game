@@ -8,12 +8,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 export function LanguageSwitcher() {
-  const router = useRouter();
-  const pathname = usePathname();
   const t = useTranslations("common");
 
   const changeLanguage = (locale: string) => {

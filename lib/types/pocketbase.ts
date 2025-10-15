@@ -13,6 +13,7 @@ export enum Collections {
 	Superusers = "_superusers",
 	Decks = "decks",
 	Songs = "songs",
+	Users = "users",
 }
 
 // Alias types for improved usability
@@ -112,6 +113,17 @@ export type SongsRecord = {
 	year: number
 }
 
+export type UsersRecord = {
+	created?: IsoDateString
+	email: string
+	emailVisibility?: boolean
+	id: string
+	password: string
+	tokenKey: string
+	updated?: IsoDateString
+	verified?: boolean
+}
+
 // Response types include system fields and match responses from the PocketBase API
 export type AuthoriginsResponse<Texpand = unknown> = Required<AuthoriginsRecord> & BaseSystemFields<Texpand>
 export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRecord> & BaseSystemFields<Texpand>
@@ -120,6 +132,7 @@ export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemF
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type DecksResponse<Texpand = unknown> = Required<DecksRecord> & BaseSystemFields<Texpand>
 export type SongsResponse<Texpand = unknown> = Required<SongsRecord> & BaseSystemFields<Texpand>
+export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 
@@ -131,6 +144,7 @@ export type CollectionRecords = {
 	_superusers: SuperusersRecord
 	decks: DecksRecord
 	songs: SongsRecord
+	users: UsersRecord
 }
 
 export type CollectionResponses = {
@@ -141,6 +155,7 @@ export type CollectionResponses = {
 	_superusers: SuperusersResponse
 	decks: DecksResponse
 	songs: SongsResponse
+	users: UsersResponse
 }
 
 // Type for usage with type asserted PocketBase instance
@@ -154,4 +169,5 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: '_superusers'): RecordService<SuperusersResponse>
 	collection(idOrName: 'decks'): RecordService<DecksResponse>
 	collection(idOrName: 'songs'): RecordService<SongsResponse>
+	collection(idOrName: 'users'): RecordService<UsersResponse>
 }

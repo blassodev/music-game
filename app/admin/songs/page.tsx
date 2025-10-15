@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -12,23 +13,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Play, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Play, Edit, Trash2, Download } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { SongsRecord } from "@/lib/types/pocketbase";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SongQRCode } from "@/components/song-qr-code";
 import { AudioPlayerModal } from "@/components/audio-player-modal";
-
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
+import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
+import { toast } from "sonner";
 
 export default function SongsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [songs, setSongs] = useState<SongsRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    song: SongsRecord | null;
+  }>({ open: false, song: null });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -46,6 +48,27 @@ export default function SongsPage() {
 
     fetchSongs();
   }, []);
+
+  const handleDeleteClick = (song: SongsRecord) => {
+    setDeleteDialog({ open: true, song });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.song) return;
+
+    setIsDeleting(true);
+    try {
+      await pb.collection("songs").delete(deleteDialog.song.id);
+      setSongs((prev) => prev.filter((s) => s.id !== deleteDialog.song!.id));
+      toast.success("Canción eliminada exitosamente");
+    } catch (error) {
+      console.error("Error deleting song:", error);
+      toast.error("Error al eliminar la canción");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialog({ open: false, song: null });
+    }
+  };
 
   if (loading) {
     return <div>Cargando canciones...</div>;
@@ -67,10 +90,20 @@ export default function SongsPage() {
             Manage your music collection
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Song
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/admin/songs/import">
+            <Button variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Import from URL
+            </Button>
+          </Link>
+          <Link href="/admin/songs/create">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Song
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -127,10 +160,16 @@ export default function SongsPage() {
                               </Button>
                             }
                           />
-                          <Button size="sm" variant="ghost">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
+                          <Link href={`/admin/songs/${song.id}/edit`}>
+                            <Button size="sm" variant="ghost">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick(song)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -147,6 +186,17 @@ export default function SongsPage() {
       <div className="text-sm text-muted-foreground">
         Showing {filteredSongs.length} of {songs.length} songs
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog({ open, song: deleteDialog.song })
+        }
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Canción"
+        description={`¿Estás seguro de que quieres eliminar "${deleteDialog.song?.title}"? Esta acción no se puede deshacer.`}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

@@ -9,11 +9,18 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Library, Edit, Trash2 } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { DecksRecord } from "@/lib/types/pocketbase";
+import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
+import { toast } from "sonner";
 
 export default function DecksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [decks, setDecks] = useState<DecksRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    deck: DecksRecord | null;
+  }>({ open: false, deck: null });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchDecks = async () => {
@@ -31,6 +38,27 @@ export default function DecksPage() {
 
     fetchDecks();
   }, []);
+
+  const handleDeleteClick = (deck: DecksRecord) => {
+    setDeleteDialog({ open: true, deck });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.deck) return;
+
+    setIsDeleting(true);
+    try {
+      await pb.collection("decks").delete(deleteDialog.deck.id);
+      setDecks((prev) => prev.filter((d) => d.id !== deleteDialog.deck!.id));
+      toast.success("Mazo eliminado exitosamente");
+    } catch (error) {
+      console.error("Error deleting deck:", error);
+      toast.error("Error al eliminar el mazo");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialog({ open: false, deck: null });
+    }
+  };
 
   if (loading) {
     return <div>Cargando decks...</div>;
@@ -51,10 +79,12 @@ export default function DecksPage() {
             Organize songs into themed decks
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Deck
-        </Button>
+        <Link href="/admin/decks/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Deck
+          </Button>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
@@ -99,10 +129,16 @@ export default function DecksPage() {
                         View Details
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
+                    <Link href={`/admin/decks/${deck.id}/edit`}>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClick(deck)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -116,6 +152,17 @@ export default function DecksPage() {
       <div className="text-sm text-muted-foreground">
         Showing {filteredDecks.length} of {decks.length} decks
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog({ open, deck: deleteDialog.deck })
+        }
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Mazo"
+        description={`¿Estás seguro de que quieres eliminar el mazo "${deleteDialog.deck?.name}"? Esta acción no se puede deshacer.`}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

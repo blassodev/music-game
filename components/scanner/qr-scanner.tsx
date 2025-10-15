@@ -17,7 +17,7 @@ async function validateCardCode(cardCode: string): Promise<boolean> {
     // En el nuevo sistema, el código QR debería ser el ID de una canción
     const song = await pb.collection("songs").getOne<SongsRecord>(cardCode);
     return !!song;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

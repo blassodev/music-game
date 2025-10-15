@@ -1,5 +1,6 @@
 import { AdminNav } from "@/components/admin/admin-nav";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { UserMenu } from "@/components/admin/user-menu";
 import { getTranslations } from "next-intl/server";
 
 export default async function AdminLayout({
@@ -18,7 +19,10 @@ export default async function AdminLayout({
               <h1 className="text-2xl font-bold">{t("title")}</h1>
               <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
-            <LanguageSwitcher />
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <UserMenu />
+            </div>
           </div>
         </div>
       </div>

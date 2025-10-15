@@ -4,7 +4,6 @@ import pb from "@/lib/pocketbase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SongsRecord, DecksRecord } from "@/lib/types/pocketbase";
-import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
 async function getStats() {
