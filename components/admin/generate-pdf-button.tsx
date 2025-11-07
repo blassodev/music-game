@@ -22,16 +22,16 @@ interface GeneratePDFButtonProps {
 export function GeneratePDFButton({ cards, deckName }: GeneratePDFButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateQRCodeDataUrl = async (cardId: string): Promise<string> => {
+  const generateQRCodeDataUrl = async (songId: string): Promise<string> => {
     return new Promise((resolve) => {
-      const url = `${window.location.origin}/player/${cardId}`;
+      const url = songId;
 
       // Crear un SVG temporal del QR code
       const tempDiv = document.createElement("div");
       tempDiv.style.position = "absolute";
       tempDiv.style.left = "-9999px";
       tempDiv.innerHTML = `
-        <svg id="temp-qr-${cardId}" xmlns="http://www.w3.org/2000/svg" width="300" height="300"></svg>
+        <svg id="temp-qr-${songId}" xmlns="http://www.w3.org/2000/svg" width="300" height="300"></svg>
       `;
       document.body.appendChild(tempDiv);
 
@@ -110,7 +110,10 @@ export function GeneratePDFButton({ cards, deckName }: GeneratePDFButtonProps) {
       // Generar los códigos QR para todas las cards
       const cardsWithQR = await Promise.all(
         cards.map(async (card) => {
-          const qrCodeDataUrl = await generateQRCodeDataUrl(card.id);
+          // Usar el ID de la song para el QR code
+          const qrCodeDataUrl = card.song
+            ? await generateQRCodeDataUrl(card.song)
+            : "";
           return {
             ...card,
             qrCodeDataUrl,
