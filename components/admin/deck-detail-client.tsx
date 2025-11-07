@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { SongQRCode } from "@/components/song-qr-code";
 import { AudioPlayerModal } from "@/components/audio-player-modal";
 import { AddCardToDeck } from "@/components/admin/add-card-to-deck";
+import { GeneratePDFButton } from "@/components/admin/generate-pdf-button";
+import { EditCard } from "@/components/admin/edit-card";
+import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import {
   Table,
   TableBody,
@@ -15,14 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  QrCode,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  Play,
-} from "lucide-react";
+import { ArrowLeft, Trash2, ArrowUp, ArrowDown, Play } from "lucide-react";
 import Link from "next/link";
 import { DecksRecord, CardsRecord, SongsRecord } from "@/lib/types/pocketbase";
 import { useRouter } from "next/navigation";
@@ -44,6 +40,9 @@ export function DeckDetailClient({
   const router = useRouter();
   const [cards, setCards] = useState<CardWithDetails[]>(initialCards);
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchCards = async () => {
     setIsLoading(true);
@@ -85,6 +84,72 @@ export function DeckDetailClient({
     router.refresh();
   };
 
+  const handleCardUpdated = () => {
+    fetchCards();
+    router.refresh();
+  };
+
+  const handleDeleteCard = async () => {
+    if (!cardToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // Obtener el deck actualizado
+      const currentDeck = await pb.collection("decks").getOne(deck.id);
+
+      // Filtrar la card a eliminar del array de cards
+      const updatedCards = (currentDeck.cards || []).filter(
+        (cardId: string) => cardId !== cardToDelete
+      );
+
+      // Actualizar el deck con el nuevo array de cards
+      await pb.collection("decks").update(deck.id, {
+        cards: updatedCards,
+      });
+
+      // Opcionalmente, también puedes eliminar la card de la colección cards
+      // await pb.collection("cards").delete(cardToDelete);
+
+      fetchCards();
+      router.refresh();
+      setCardToDelete(null);
+    } catch (error) {
+      console.error("Error deleting card:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteDialog = (cardId: string) => {
+    setCardToDelete(cardId);
+    setDeleteDialogOpen(true);
+  };
+
+  const moveCard = async (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= cards.length) return;
+
+    try {
+      const newCards = [...cards];
+      [newCards[index], newCards[newIndex]] = [
+        newCards[newIndex],
+        newCards[index],
+      ];
+
+      // Actualizar el orden en el servidor
+      const cardIds = newCards.map((card) => card.id);
+      await pb.collection("decks").update(deck.id, {
+        cards: cardIds,
+      });
+
+      setCards(newCards);
+      router.refresh();
+    } catch (error) {
+      console.error("Error moving card:", error);
+    }
+  };
+
   const getCardTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       song: "Canción",
@@ -117,6 +182,13 @@ export function DeckDetailClient({
     return "N/A";
   };
 
+  const getCardYear = (card: CardWithDetails) => {
+    if (card.type === "song" && card.songData) {
+      return card.songData.year?.toString() || "N/A";
+    }
+    return card.year || "N/A";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -137,6 +209,7 @@ export function DeckDetailClient({
             <p className="text-sm text-muted-foreground">{deck.description}</p>
           </div>
           <div className="flex gap-2">
+            <GeneratePDFButton cards={cards} deckName={deck.name} />
             <AddCardToDeck deckId={deck.id} onCardAdded={handleCardAdded} />
           </div>
         </div>
@@ -219,7 +292,7 @@ export function DeckDetailClient({
                         {getCardTitle(card)}
                       </TableCell>
                       <TableCell>{getCardArtist(card)}</TableCell>
-                      <TableCell>{card.year || "N/A"}</TableCell>
+                      <TableCell>{getCardYear(card)}</TableCell>
                       <TableCell>
                         {card.song && (
                           <SongQRCode
@@ -240,18 +313,31 @@ export function DeckDetailClient({
                               }
                             />
                           )}
-                          <Button size="sm" variant="ghost">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveCard(index, "up")}
+                            disabled={index === 0}
+                          >
                             <ArrowUp className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveCard(index, "down")}
+                            disabled={index === cards.length - 1}
+                          >
                             <ArrowDown className="h-4 w-4" />
                           </Button>
-                          {card.type === "song" && (
-                            <Button size="sm" variant="ghost">
-                              <QrCode className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button size="sm" variant="ghost">
+                          <EditCard
+                            card={card}
+                            onCardUpdated={handleCardUpdated}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openDeleteDialog(card.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -264,6 +350,15 @@ export function DeckDetailClient({
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteCard}
+        title="Delete Card from Deck"
+        description="Are you sure you want to remove this card from the deck? This action cannot be undone."
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

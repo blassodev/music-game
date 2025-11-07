@@ -20,10 +20,10 @@ async function getDeckWithCards(id: string) {
           filter: deck.cards.map((cardId) => `id='${cardId}'`).join(" || "),
         });
 
-      // Para cada card, si es de tipo 'song', obtener los datos de la canción
+      // Para cada card, si tiene una canción asociada, obtener los datos de la canción
       cards = await Promise.all(
         fetchedCards.map(async (card) => {
-          if (card.type === "song" && card.song) {
+          if (card.song) {
             try {
               const songData = await pb
                 .collection("songs")

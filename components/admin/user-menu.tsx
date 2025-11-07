@@ -12,11 +12,17 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { User, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { useState, useEffect } from "react";
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const t = useTranslations("admin.userMenu");
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -30,6 +36,16 @@ export function UserMenu() {
 
   if (!user) {
     return null;
+  }
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <Button variant="ghost" className="flex items-center gap-2" disabled>
+        <User className="h-4 w-4" />
+        <span className="hidden md:inline">...</span>
+      </Button>
+    );
   }
 
   return (
