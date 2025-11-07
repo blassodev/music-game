@@ -19,7 +19,8 @@ if (typeof window !== "undefined") {
         token: pb.authStore.token,
         model: pb.authStore.model,
       };
-      document.cookie = `pb_auth=${JSON.stringify(authData)}; path=/; max-age=${
+      const encodedData = encodeURIComponent(JSON.stringify(authData));
+      document.cookie = `pb_auth=${encodedData}; path=/; max-age=${
         7 * 24 * 60 * 60
       }; samesite=strict`;
     } else {
@@ -36,12 +37,16 @@ if (typeof window !== "undefined") {
 
   if (authCookie) {
     try {
-      const authData = JSON.parse(authCookie.split("=")[1]);
+      const cookieValue = decodeURIComponent(authCookie.split("=")[1]);
+      const authData = JSON.parse(cookieValue);
       if (authData.token && authData.model) {
         pb.authStore.save(authData.token, authData.model);
       }
     } catch (error) {
       console.error("Error loading auth from cookie:", error);
+      // Limpiar cookie corrupta
+      document.cookie =
+        "pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
   }
 }

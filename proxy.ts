@@ -1,22 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Get the preferred language from cookie or default to 'es'
   const preferredLanguage =
     request.cookies.get("preferred-language")?.value || "es";
 
   // Check if this is an admin route
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  const isAdminLoginPage = request.nextUrl.pathname.startsWith("/admin-login");
 
-  if (isAdminRoute && !isLoginPage) {
+  if (isAdminRoute && !isAdminLoginPage) {
     // Check for authentication cookie
     const authCookie = request.cookies.get("pb_auth");
 
     if (!authCookie) {
       // Redirect to login page if not authenticated
-      const loginUrl = new URL(`/login/login`, request.url);
+      const loginUrl = new URL(`/admin-login`, request.url);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -24,18 +24,18 @@ export function middleware(request: NextRequest) {
       // Basic validation of auth cookie structure
       const authData = JSON.parse(authCookie.value);
       if (!authData.token || !authData.model) {
-        const loginUrl = new URL(`/login/login`, request.url);
+        const loginUrl = new URL(`/admin-login`, request.url);
         return NextResponse.redirect(loginUrl);
       }
     } catch {
       // Invalid JSON in auth cookie, redirect to login
-      const loginUrl = new URL(`/login/login`, request.url);
+      const loginUrl = new URL(`/admin-login`, request.url);
       return NextResponse.redirect(loginUrl);
     }
   }
 
   // If user is authenticated and trying to access login page, redirect to admin
-  if (isLoginPage) {
+  if (isAdminLoginPage) {
     const authCookie = request.cookies.get("pb_auth");
     if (authCookie) {
       try {

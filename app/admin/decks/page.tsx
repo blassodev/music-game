@@ -106,13 +106,13 @@ export default function DecksPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredDecks.map((deck) => {
-            const cardCount = deck.songs?.length || 0;
+            const cardCount = deck.cards?.length || 0;
             return (
               <Card key={deck.id} className="overflow-hidden">
                 <CardHeader className="bg-muted/50">
                   <div className="flex items-start justify-between">
                     <Library className="h-8 w-8 text-primary" />
-                    <Badge variant="default">{cardCount} songs</Badge>
+                    <Badge variant="default">{cardCount} cards</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">

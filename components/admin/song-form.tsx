@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Wand2 } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { SongsRecord } from "@/lib/types/pocketbase";
 import { toast } from "sonner";
+import { parseBlob } from "music-metadata-browser";
 
 interface SongFormProps {
   song?: SongsRecord;
@@ -30,6 +31,47 @@ export function SongForm({ song, isEdit = false }: SongFormProps) {
 
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
+
+  const extractMetadata = async (file: File) => {
+    setIsExtractingMetadata(true);
+    try {
+      const metadata = await parseBlob(file);
+
+      const updates: Partial<typeof formData> = {};
+
+      if (metadata.common.title && !formData.title) {
+        updates.title = metadata.common.title;
+      }
+
+      if (metadata.common.artist && !formData.artist) {
+        updates.artist = metadata.common.artist;
+      }
+
+      if (metadata.common.album && !formData.album) {
+        updates.album = metadata.common.album;
+      }
+
+      if (metadata.common.year && !formData.year) {
+        updates.year = metadata.common.year.toString();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          ...updates,
+        }));
+        toast.success("Metadatos extraídos exitosamente");
+      } else {
+        toast.info("No se encontraron metadatos nuevos en el archivo");
+      }
+    } catch (error) {
+      console.error("Error extracting metadata:", error);
+      toast.error("Error al extraer metadatos del archivo");
+    } finally {
+      setIsExtractingMetadata(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -38,7 +80,7 @@ export function SongForm({ song, isEdit = false }: SongFormProps) {
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validar que sea un archivo de audio
@@ -47,6 +89,9 @@ export function SongForm({ song, isEdit = false }: SongFormProps) {
         return;
       }
       setAudioFile(file);
+
+      // Extraer metadatos automáticamente
+      await extractMetadata(file);
     }
   };
 
@@ -164,13 +209,33 @@ export function SongForm({ song, isEdit = false }: SongFormProps) {
                 accept="audio/*"
                 onChange={handleFileChange}
                 className="cursor-pointer"
+                disabled={isExtractingMetadata}
               />
               <Upload className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
-            {audioFile && (
-              <p className="text-sm text-muted-foreground">
-                Archivo seleccionado: {audioFile.name}
-              </p>
+            {isExtractingMetadata && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Extrayendo metadatos...</span>
+              </div>
+            )}
+            {audioFile && !isExtractingMetadata && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Archivo seleccionado: {audioFile.name}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => extractMetadata(audioFile)}
+                  disabled={isExtractingMetadata}
+                  className="gap-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Extraer metadatos
+                </Button>
+              </div>
             )}
             {isEdit && song?.audio && !audioFile && (
               <p className="text-sm text-muted-foreground">

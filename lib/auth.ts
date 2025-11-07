@@ -52,5 +52,5 @@ export function requiresAuth(pathname: string): boolean {
 // Función para obtener la URL de login
 export function getLoginUrl(locale?: string): string {
   const baseUrl = locale ? `/${locale}` : "";
-  return `${baseUrl}/login/login`;
+  return `${baseUrl}/admin-login`;
 }
