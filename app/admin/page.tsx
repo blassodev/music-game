@@ -15,7 +15,7 @@ async function getStats() {
 
     // Calcular total de cartas basado en las canciones en los decks
     const totalCards = decks.reduce((total, deck) => {
-      return total + (deck.songs?.length || 0);
+      return total + (deck.cards?.length || 0);
     }, 0);
 
     return {
