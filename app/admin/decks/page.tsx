@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import pb from "@/lib/pocketbase";
 import { DecksRecord } from "@/lib/types/pocketbase";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { toast } from "sonner";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export default function DecksPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +22,7 @@ export default function DecksPage() {
     deck: DecksRecord | null;
   }>({ open: false, deck: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchDecks = async () => {
@@ -38,6 +40,19 @@ export default function DecksPage() {
 
     fetchDecks();
   }, []);
+
+  const filteredDecks = decks.filter(
+    (deck) =>
+      deck.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      deck.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: Math.ceil(filteredDecks.length / 3), // número de filas (3 columnas por fila)
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 250, // altura estimada de cada fila de cards
+    overscan: 2,
+  });
 
   const handleDeleteClick = (deck: DecksRecord) => {
     setDeleteDialog({ open: true, deck });
@@ -63,12 +78,6 @@ export default function DecksPage() {
   if (loading) {
     return <div>Cargando decks...</div>;
   }
-
-  const filteredDecks = decks.filter(
-    (deck) =>
-      deck.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deck.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className="space-y-6">
@@ -104,48 +113,86 @@ export default function DecksPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredDecks.map((deck) => {
-            const cardCount = deck.cards?.length || 0;
-            return (
-              <Card key={deck.id} className="overflow-hidden">
-                <CardHeader className="bg-muted/50">
-                  <div className="flex items-start justify-between">
-                    <Library className="h-8 w-8 text-primary" />
-                    <Badge variant="default">{cardCount} cards</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <CardTitle className="mb-2">{deck.name}</CardTitle>
-                  <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
-                    {deck.description}
-                  </p>
-                  <div className="mb-4 flex items-center gap-2 text-sm">
-                    <Badge variant="outline">{cardCount} cards</Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/admin/decks/${deck.id}`} className="flex-1">
-                      <Button variant="default" className="w-full" size="sm">
-                        View Details
-                      </Button>
-                    </Link>
-                    <Link href={`/admin/decks/${deck.id}/edit`}>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteClick(deck)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ height: "600px" }}
+        >
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const startIndex = virtualRow.index * 3;
+              const rowDecks = filteredDecks.slice(startIndex, startIndex + 3);
+
+              return (
+                <div
+                  key={virtualRow.index}
+                  className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 px-1"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {rowDecks.map((deck) => {
+                    const cardCount = deck.cards?.length || 0;
+                    return (
+                      <Card key={deck.id} className="overflow-hidden">
+                        <CardHeader className="bg-muted/50">
+                          <div className="flex items-start justify-between">
+                            <Library className="h-8 w-8 text-primary" />
+                            <Badge variant="default">{cardCount} cards</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                          <CardTitle className="mb-2">{deck.name}</CardTitle>
+                          <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
+                            {deck.description}
+                          </p>
+                          <div className="mb-4 flex items-center gap-2 text-sm">
+                            <Badge variant="outline">{cardCount} cards</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/admin/decks/${deck.id}`}
+                              className="flex-1"
+                            >
+                              <Button
+                                variant="default"
+                                className="w-full"
+                                size="sm"
+                              >
+                                View Details
+                              </Button>
+                            </Link>
+                            <Link href={`/admin/decks/${deck.id}/edit`}>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(deck)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

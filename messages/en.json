@@ -138,6 +138,10 @@
         "fetchError": "Error fetching video information",
         "downloadError": "Error downloading song",
         "invalidUrl": "Invalid URL format"
+      },
+      "bulkImport": {
+        "pageTitle": "Bulk Import Songs",
+        "pageSubtitle": "Import multiple songs at once with automatic metadata extraction"
       }
     },
     "decks": {

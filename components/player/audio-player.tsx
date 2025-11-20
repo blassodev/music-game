@@ -41,7 +41,6 @@ export function AudioPlayer({ song }: AudioPlayerProps) {
     }
 
     const url = pb.files.getURL(song, song.audio);
-    console.log("Generated audio URL for song", song.id, ":", url);
     return url;
   }, [song]);
 

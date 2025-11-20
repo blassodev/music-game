@@ -40,7 +40,6 @@ export function AudioPlayerModal({ song, trigger }: AudioPlayerModalProps) {
     }
 
     const audioUrl = pb.files.getURL(song, song.audio);
-    console.log("Generated audio URL for song", song.id, ":", audioUrl);
     return audioUrl;
   };
 

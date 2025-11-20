@@ -90,6 +90,8 @@ const styles = StyleSheet.create({
 });
 
 export const DeckPDF: React.FC<DeckPDFProps> = ({ cards, deckName }) => {
+  const CARDS_PER_PAGE = 12; // 4 filas x 3 columnas
+
   const getCardYear = (card: CardWithDetails) => {
     if (card.songData) {
       return card.songData.year?.toString() || "N/A";
@@ -154,27 +156,43 @@ export const DeckPDF: React.FC<DeckPDFProps> = ({ cards, deckName }) => {
     }
   };
 
+  // Dividir las cartas en páginas
+  const cardPages = [];
+  for (let i = 0; i < cards.length; i += CARDS_PER_PAGE) {
+    cardPages.push(cards.slice(i, i + CARDS_PER_PAGE));
+  }
+
+  // Dividir los QR en páginas
+  const qrPages = [];
+  for (let i = 0; i < cards.length; i += CARDS_PER_PAGE) {
+    qrPages.push(cards.slice(i, i + CARDS_PER_PAGE));
+  }
+
   return (
     <Document>
-      {/* Página con las cartas (frente) */}
-      <Page size="A4" style={styles.page}>
-        {cards.map((card) => (
-          <View key={card.id} style={styles.card}>
-            {renderCardContent(card)}
-          </View>
-        ))}
-      </Page>
+      {/* Páginas con las cartas (frente) */}
+      {cardPages.map((pageCards, pageIndex) => (
+        <Page key={`cards-page-${pageIndex}`} size="A4" style={styles.page}>
+          {pageCards.map((card) => (
+            <View key={card.id} style={styles.card}>
+              {renderCardContent(card)}
+            </View>
+          ))}
+        </Page>
+      ))}
 
-      {/* Página con los códigos QR (reverso) */}
-      <Page size="A4" style={styles.qrPage}>
-        {cards.map((card) => (
-          <View key={`qr-${card.id}`} style={styles.qrCard}>
-            {card.qrCodeDataUrl && (
-              <Image style={styles.qrImage} src={card.qrCodeDataUrl} />
-            )}
-          </View>
-        ))}
-      </Page>
+      {/* Páginas con los códigos QR (reverso) */}
+      {qrPages.map((pageCards, pageIndex) => (
+        <Page key={`qr-page-${pageIndex}`} size="A4" style={styles.qrPage}>
+          {pageCards.map((card) => (
+            <View key={`qr-${card.id}`} style={styles.qrCard}>
+              {card.qrCodeDataUrl && (
+                <Image style={styles.qrImage} src={card.qrCodeDataUrl} />
+              )}
+            </View>
+          ))}
+        </Page>
+      ))}
     </Document>
   );
 };

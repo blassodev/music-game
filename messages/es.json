@@ -138,6 +138,10 @@
         "fetchError": "Error al obtener información del video",
         "downloadError": "Error al descargar la canción",
         "invalidUrl": "Formato de URL inválido"
+      },
+      "bulkImport": {
+        "pageTitle": "Importación Masiva de Canciones",
+        "pageSubtitle": "Importa múltiples canciones a la vez con extracción automática de metadatos"
       }
     },
     "decks": {
