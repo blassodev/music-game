@@ -23,9 +23,10 @@ import { Loader2, Search, Plus } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { SongsRecord } from "@/lib/types/pocketbase";
 import { toast } from "sonner";
+import { DecksRecord } from "@/lib/types/pocketbase";
 
 interface AddCardToDeckProps {
-  deckId: string;
+  deckId?: string; // Ahora es opcional
   onCardAdded: () => void;
 }
 
@@ -37,6 +38,11 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
   const [open, setOpen] = useState(false);
   const [cardType, setCardType] = useState<CardType>("song");
   const [year, setYear] = useState("");
+
+  // Para selección de deck
+  const [decks, setDecks] = useState<DecksRecord[]>([]);
+  const [selectedDeck, setSelectedDeck] = useState<string>(deckId || "");
+  const [loadingDecks, setLoadingDecks] = useState(false);
 
   // Para selección de canción (todos los tipos)
   const [songs, setSongs] = useState<SongsRecord[]>([]);
@@ -61,6 +67,7 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
   useEffect(() => {
     if (open) {
       fetchSongs(1, "");
+      fetchDecks(); // Siempre cargar decks
     }
   }, [open]);
 
@@ -72,6 +79,13 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
       }
     };
   }, []);
+
+  // Sincronizar selectedDeck con deckId
+  useEffect(() => {
+    if (deckId) {
+      setSelectedDeck(deckId);
+    }
+  }, [deckId]);
 
   // Reset form cuando cambia el tipo
   useEffect(() => {
@@ -156,6 +170,22 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
     }
   };
 
+  // Cargar decks disponibles
+  const fetchDecks = async () => {
+    setLoadingDecks(true);
+    try {
+      const records = await pb.collection("decks").getFullList<DecksRecord>({
+        sort: "-created",
+      });
+      setDecks(records);
+    } catch (error: any) {
+      console.error("Error fetching decks:", error);
+      toast.error("Error al cargar los decks");
+    } finally {
+      setLoadingDecks(false);
+    }
+  };
+
   // Manejar búsqueda con debounce
   const handleSearch = useCallback((query: string) => {
     setSearchSongQuery(query);
@@ -196,6 +226,12 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
   };
 
   const handleSubmit = async () => {
+    // Validar que haya un deck seleccionado
+    if (!selectedDeck) {
+      toast.error("Selecciona un deck");
+      return;
+    }
+
     // Validar que haya una canción seleccionada
     if (!selectedSong) {
       toast.error("Selecciona una canción");
@@ -244,8 +280,8 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
       // Crear la card
       const newCard = await pb.collection("cards").create(cardData);
 
-      // 2. Obtener el deck actual
-      const deck = await pb.collection("decks").getOne(deckId);
+      // 2. Obtener el deck actual (usar selectedDeck en lugar de deckId)
+      const deck = await pb.collection("decks").getOne(selectedDeck);
 
       // 3. Añadir la nueva card al array de cards
       const currentCards: string[] = Array.isArray(deck.cards)
@@ -253,8 +289,8 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
         : [];
       const updatedCards = [...currentCards, newCard.id];
 
-      // 4. Actualizar el deck con el array actualizado
-      await pb.collection("decks").update(deckId, {
+      // 4. Actualizar el deck con el array actualizado (usar selectedDeck)
+      await pb.collection("decks").update(selectedDeck, {
         name: deck.name,
         cards: updatedCards,
         ...(deck.description && { description: deck.description }),
@@ -271,6 +307,7 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
       setSongs([]);
       setCurrentPage(1);
       setHasMore(true);
+      setSelectedDeck(deckId || ""); // Resetear al deckId original o vacío
       setOpen(false);
       onCardAdded();
     } catch (error) {
@@ -298,6 +335,33 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 px-1">
+          {/* Selector de deck (siempre visible) */}
+          <div className="space-y-2">
+            <Label htmlFor="deck-select">Deck Destino *</Label>
+            {loadingDecks ? (
+              <div className="flex items-center justify-center py-4 border rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm">Cargando decks...</span>
+              </div>
+            ) : (
+              <Select
+                value={selectedDeck}
+                onValueChange={(value) => setSelectedDeck(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un deck" />
+                </SelectTrigger>
+                <SelectContent>
+                  {decks.map((deck) => (
+                    <SelectItem key={deck.id} value={deck.id}>
+                      {deck.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           {/* Selector de tipo de card */}
           <div className="space-y-2">
             <Label htmlFor="card-type">Tipo de Card *</Label>
@@ -462,6 +526,7 @@ export function AddCardToDeck({ deckId, onCardAdded }: AddCardToDeckProps) {
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
+              !selectedDeck ||
               !selectedSong ||
               ((cardType === "ost" ||
                 cardType === "opening" ||
