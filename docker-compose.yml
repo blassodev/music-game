@@ -1,0 +1,18 @@
+services:
+  music-game:
+    image: ${DOCKER_IMAGE:-music-game:latest}
+    container_name: music-game
+    restart: unless-stopped
+    networks:
+      - web_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.music-game.rule=Host(`test.lab.blassanto.me`)"
+      - "traefik.http.routers.music-game.entrypoints=websecure"
+      - "traefik.http.routers.music-game.tls=true"
+      - "traefik.http.routers.music-game.tls.certresolver=myresolver"
+      - "traefik.http.services.music-game.loadbalancer.server.port=3000"
+
+networks:
+  web_network:
+    external: true
