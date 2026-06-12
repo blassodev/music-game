@@ -4,19 +4,28 @@ on:
   push:
     branches: [main]
 
+env:
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup SSH
+        env:
+          SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          echo 'echo $SSH_PASSPHRASE' > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
+
       - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          script: |
-            cd /opt/music-game
-            git pull origin main
-            docker build -t music-game:latest .
-            docker compose up -d
+        run: |
+          ssh -o StrictHostKeyChecking=no formacion@38.242.196.69 "
+            cd /opt/music-game &&
+            git pull origin main &&
+            docker build -t music-game:latest . &&
+            docker compose up -d &&
             docker system prune -f
+          "
