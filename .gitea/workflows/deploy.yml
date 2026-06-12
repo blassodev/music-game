@@ -17,9 +17,11 @@ jobs:
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           eval $(ssh-agent -s)
-          echo 'echo $SSH_PASSPHRASE' > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
+          echo '#!/bin/sh' > ~/.ssh_askpass
+          echo "echo $SSH_PASSPHRASE" >> ~/.ssh_askpass
+          chmod +x ~/.ssh_askpass
           DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add ~/.ssh/deploy_key 2>&1
-          echo "=== SSH AGENT IDENTITIES ==="
+          echo "=== IDENTITIES ==="
           ssh-add -l
-          echo "=== TESTING CONNECTION ==="
-          ssh -o StrictHostKeyChecking=no formacion@38.242.196.69 "echo connected" 2>&1
+          echo "=== SSH -vvv ==="
+          ssh -vvv -o StrictHostKeyChecking=no -o IdentitiesOnly=yes formacion@38.242.196.69 "echo connected" 2>&1 | tail -30
