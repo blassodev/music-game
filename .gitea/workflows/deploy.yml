@@ -16,10 +16,7 @@ jobs:
           eval $(ssh-agent -s)
           echo 'echo $SSH_PASSPHRASE' > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - 2>&1
-          ssh -o StrictHostKeyChecking=no formacion@38.242.196.69 "
-            cd /opt/music-game &&
-            git pull origin main &&
-            docker build -t music-game:latest . &&
-            docker compose up -d &&
-            docker system prune -f
-          "
+          echo "=== KEYS LOADED ==="
+          ssh-add -l
+          echo "=== SSH VERBOSE ==="
+          ssh -vvv -o StrictHostKeyChecking=no formacion@38.242.196.69 "echo connected" 2>&1 | grep -E "debug1: (Auth|offer|Trying|Next|identity|pubkey)" | head -30
