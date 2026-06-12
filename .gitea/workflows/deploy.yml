@@ -4,33 +4,11 @@ on:
   push:
     branches: [main]
 
-env:
-  DOCKER_IMAGE: music-game:latest
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t ${{ env.DOCKER_IMAGE }} .
-
-      - name: Save Docker image
-        run: docker save ${{ env.DOCKER_IMAGE }} | gzip > /tmp/image.tar.gz
-
       - name: Deploy to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          source: /tmp/image.tar.gz,docker-compose.yml
-          target: /opt/music-game
-
-      - name: Load image and restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -39,6 +17,7 @@ jobs:
           password: ${{ secrets.DEPLOY_PASSWORD }}
           script: |
             cd /opt/music-game
-            docker load < /tmp/image.tar.gz
+            git pull origin main
+            docker build -t music-game:latest .
             docker compose up -d
             docker system prune -f
