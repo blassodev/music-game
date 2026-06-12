@@ -10,18 +10,15 @@ jobs:
     steps:
       - name: Setup SSH and Deploy
         env:
-          SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          eval $(ssh-agent -s)
-          echo '#!/bin/sh' > ~/.ssh_askpass
-          echo "echo $SSH_PASSPHRASE" >> ~/.ssh_askpass
-          chmod +x ~/.ssh_askpass
-          DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add ~/.ssh/deploy_key 2>&1
-          echo "=== IDENTITIES ==="
-          ssh-add -l
-          echo "=== SSH -vvv ==="
-          ssh -vvv -o StrictHostKeyChecking=no -o IdentitiesOnly=yes formacion@38.242.196.69 "echo connected" 2>&1 | tail -30
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key formacion@38.242.196.69 "
+            cd /opt/music-game &&
+            git pull origin main &&
+            docker build -t music-game:latest . &&
+            docker compose up -d &&
+            docker system prune -f
+          "
