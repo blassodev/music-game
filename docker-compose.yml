@@ -1,6 +1,6 @@
 services:
   music-game:
-    image: ${DOCKER_IMAGE:-music-game:latest}
+    image: ghcr.io/blassodev/music-game:latest
     container_name: music-game
     restart: unless-stopped
     networks:
