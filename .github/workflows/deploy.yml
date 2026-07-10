@@ -69,12 +69,16 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
+          export TUNNEL_SERVICE_HOSTNAME="$SSH_HOST"
+          export TUNNEL_SERVICE_TOKEN_ID="$CF_ACCESS_CLIENT_ID"
+          export TUNNEL_SERVICE_TOKEN_SECRET="$CF_ACCESS_CLIENT_SECRET"
+
           cat > ~/.ssh/config <<EOF
           Host $SSH_HOST
             HostName $SSH_HOST
             User $SSH_USER
             IdentityFile ~/.ssh/deploy_key
-            ProxyCommand cloudflared access ssh --hostname %h --id $CF_ACCESS_CLIENT_ID --secret $CF_ACCESS_CLIENT_SECRET
+            ProxyCommand cloudflared access ssh --hostname %h --loglevel debug
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
           EOF
@@ -96,6 +100,8 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           timeout 30 ssh -vvv -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'" || true
 
@@ -103,6 +109,10 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
           REGISTRY: ${{ env.REGISTRY }}
