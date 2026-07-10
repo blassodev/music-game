@@ -49,6 +49,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set lowercase repository owner
+        id: owner
+        run: echo "lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
       - name: Encode docker-compose.yml
         id: compose
         run: |
@@ -71,6 +75,6 @@ jobs:
             echo "${{ steps.compose.outputs.b64 }}" | base64 -d > ~/music-game/docker-compose.yml
             cd ~/music-game
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
-            docker pull ${{ env.REGISTRY }}/${{ github.repository_owner | lower }}/${{ env.IMAGE_NAME }}:latest
+            docker pull ${{ env.REGISTRY }}/${{ steps.owner.outputs.lc }}/${{ env.IMAGE_NAME }}:latest
             docker compose up -d
             docker system prune -f
