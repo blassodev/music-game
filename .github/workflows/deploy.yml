@@ -96,6 +96,16 @@ jobs:
           eval "$(ssh-agent -s)"
           echo "$SSH_PASSPHRASE" | ssh-add ~/.ssh/deploy_key
 
+      - name: Authenticate cloudflared with service token
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          mkdir -p ~/.cloudflared
+          cloudflared access login "https://$SSH_HOST" --id "$CF_ACCESS_CLIENT_ID" --secret "$CF_ACCESS_CLIENT_SECRET" --quiet || true
+          ls -la ~/.cloudflared || true
+
       - name: Test SSH connection
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
