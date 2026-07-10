@@ -80,8 +80,14 @@ jobs:
           EOF
 
           chmod 600 ~/.ssh/config
-          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+
+          # Normalize key: remove carriage returns and ensure trailing newline
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+
+          # Validate key format without revealing content
+          echo "Key header: $(head -n 1 ~/.ssh/deploy_key)"
+          echo "Key footer: $(tail -n 1 ~/.ssh/deploy_key)"
 
           eval "$(ssh-agent -s)"
           echo "$SSH_PASSPHRASE" | ssh-add ~/.ssh/deploy_key
