@@ -92,6 +92,13 @@ jobs:
           eval "$(ssh-agent -s)"
           echo "$SSH_PASSPHRASE" | ssh-add ~/.ssh/deploy_key
 
+      - name: Test SSH connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          timeout 30 ssh -vvv -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'" || true
+
       - name: Deploy to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -101,12 +108,13 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          REMOTE_DIR=$(ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/music-game && cd ~/music-game && pwd")
+          set -x
+          REMOTE_DIR=$(timeout 30 ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" "mkdir -p ~/music-game && cd ~/music-game && pwd")
           echo "Remote directory: $REMOTE_DIR"
 
-          scp docker-compose.yml "$SSH_USER@$SSH_HOST:$REMOTE_DIR/docker-compose.yml"
+          timeout 30 scp -o ConnectTimeout=10 -o BatchMode=yes docker-compose.yml "$SSH_USER@$SSH_HOST:$REMOTE_DIR/docker-compose.yml"
 
-          ssh "$SSH_USER@$SSH_HOST" <<REMOTE_EOF
+          timeout 120 ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" <<REMOTE_EOF
             set -e
             cd "$REMOTE_DIR"
             echo "$GITHUB_TOKEN" | docker login "$REGISTRY" -u "$GITHUB_OWNER" --password-stdin
