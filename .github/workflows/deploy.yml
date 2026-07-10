@@ -7,6 +7,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: music-game
+  SSH_USER: formacion
 
 jobs:
   build-and-push:
@@ -60,7 +61,7 @@ jobs:
       - name: Configure SSH
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_USER: ${{ env.SSH_USER }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -103,22 +104,22 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           mkdir -p ~/.cloudflared
-          cloudflared access login "https://$SSH_HOST" --id "$CF_ACCESS_CLIENT_ID" --secret "$CF_ACCESS_CLIENT_SECRET" --quiet || true
-          ls -la ~/.cloudflared || true
+          cloudflared access login "https://$SSH_HOST" --id "$CF_ACCESS_CLIENT_ID" --secret "$CF_ACCESS_CLIENT_SECRET" --quiet
+          ls -la ~/.cloudflared
 
       - name: Test SSH connection
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_USER: ${{ env.SSH_USER }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
-          timeout 30 ssh -vvv -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'" || true
+          timeout 30 ssh -vvv -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=5 "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'"
 
       - name: Deploy to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_USER: ${{ env.SSH_USER }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
