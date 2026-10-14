@@ -1,25 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { mkdtemp, rm, readFile } from "fs/promises";
-import { tmpdir } from "os";
-import path from "path";
-
-const execFileAsync = promisify(execFile);
-const RIP_CONFIG = "/app/rip/config.toml";
-
-interface SearchResult {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  album_id: string;
-  duration: number;
-  preview: string;
-  cover: string;
-  cover_big: string;
-  type: "track";
-}
 
 export async function POST(request: NextRequest) {
   let query: string;
@@ -40,66 +19,101 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Crear archivo temporal para la salida
-  const tmpDir = await mkdtemp(path.join(tmpdir(), "rip-search-"));
-  const outputFile = path.join(tmpDir, "results.json");
-
   try {
-    // Usar streamrip para buscar en Deezer
-    // rip search deezer track "query" --output-file /tmp/results.json --num-results N
-    await execFileAsync(
-      "rip",
-      [
-        "--config-path",
-        RIP_CONFIG,
-        "search",
-        "deezer",
-        "track",
-        query,
-        "--output-file",
-        outputFile,
-        "--num-results",
-        String(limit),
-      ],
-      { timeout: 30000, maxBuffer: 4 * 1024 * 1024 }
-    );
+    // Usar Python streamrip client directamente para búsqueda con metadata completa
+    const { spawn } = await import("child_process");
+    
+    const pythonScript = `
+import asyncio
+import json
+import sys
+from streamrip.client.deezer import DeezerClient
+from streamrip.config import Config
 
-    // Leer el archivo de resultados
-    const stdout = await readFile(outputFile, "utf-8");
-    const rawResults = JSON.parse(stdout);
+async def search_tracks(q, limit):
+    config = Config('/app/rip/config.toml')
+    client = DeezerClient(config)
+    await client.login()
+    
+    # Usar el método search del cliente
+    results = await client.search("track", q, limit=limit)
+    
+    # El resultado es una lista con un dict que tiene 'data'
+    if results and len(results) > 0:
+        return results[0].get('data', [])
+    return []
 
-    // El output de streamrip search es un array de objetos con:
-    // { source, media_type, id, desc: "Title by Artist" }
-    const results: SearchResult[] = [];
+if __name__ == '__main__':
+    q = sys.argv[1]
+    lim = int(sys.argv[2])
+    try:
+        tracks = asyncio.run(search_tracks(q, lim))
+        print(json.dumps(tracks))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}), file=sys.stderr)
+        sys.exit(1)
+`;
 
-    if (rawResults && Array.isArray(rawResults)) {
-      for (const item of rawResults) {
-        if (item.id && item.desc) {
-          // Parsear "Title by Artist" del campo desc
-          const desc = item.desc;
-          const byIndex = desc.lastIndexOf(" by ");
-          let title = desc;
-          let artist = "";
-          if (byIndex > 0) {
-            title = desc.substring(0, byIndex);
-            artist = desc.substring(byIndex + 4);
-          }
+    const result = await new Promise<{ stdout: string; stderr: string; code: number }>((resolve) => {
+      const proc = spawn("python3", ["-c", pythonScript, query, String(limit)], {
+        timeout: 30000,
+      });
 
-          results.push({
-            id: String(item.id),
-            title,
-            artist,
-            album: "",
-            album_id: "",
-            duration: 0,
-            preview: "",
-            cover: "",
-            cover_big: "",
-            type: "track",
-          });
-        }
-      }
+      let stdout = "";
+      let stderr = "";
+
+      proc.stdout?.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on("close", (code) => {
+        resolve({ stdout, stderr, code: code || 0 });
+      });
+
+      proc.on("error", (err) => {
+        resolve({ stdout, stderr: err.message, code: 1 });
+      });
+    });
+
+    if (result.code !== 0) {
+      console.error("Deezer search error:", result.stderr);
+      return NextResponse.json(
+        { error: "Error al buscar en Deezer", details: result.stderr },
+        { status: 502 }
+      );
     }
+
+    const rawTracks = JSON.parse(result.stdout.trim());
+
+    if (rawTracks.error) {
+      return NextResponse.json(
+        { error: rawTracks.error },
+        { status: 502 }
+      );
+    }
+
+    // Transformar tracks de la API de Deezer a nuestro formato
+    const results = rawTracks.map((track: any) => {
+      const album = track.album || {};
+      const artist = track.artist || track.contributors?.[0] || {};
+      
+      return {
+        id: String(track.id),
+        title: track.title || "",
+        artist: artist.name || "",
+        album: album.title || "",
+        album_id: String(album.id || ""),
+        duration: track.duration || 0,
+        preview: track.preview || "",
+        cover: album.cover_medium || album.cover || "",
+        cover_big: album.cover_big || album.cover_medium || album.cover || "",
+        type: "track",
+      };
+    });
 
     return NextResponse.json({
       ok: true,
@@ -108,48 +122,11 @@ export async function POST(request: NextRequest) {
       results,
     });
   } catch (err) {
-    const raw = err as { stderr?: string; message?: string; stdout?: string; code?: number };
-    const details = String(raw.stderr || raw.message || raw.stdout || "").slice(-500);
-    console.error("Deezer search error:", {
-      message: raw.message,
-      stderr: raw.stderr,
-      stdout: raw.stdout?.slice(-500),
-      code: raw.code,
-    });
-
-    // Si falla el CLI, intentar parsear stdout por si hay resultados parciales
-    if (raw.stdout) {
-      try {
-        const rawResults = JSON.parse(raw.stdout);
-        const results: SearchResult[] = [];
-        if (rawResults?.[0]?.data) {
-          for (const item of rawResults[0].data) {
-            results.push({
-              id: String(item.id),
-              title: item.title || "",
-              artist: item.artist?.name || item.artists?.[0]?.name || "",
-              album: item.album?.title || "",
-              album_id: String(item.album?.id || ""),
-              duration: item.duration || 0,
-              preview: item.preview || "",
-              cover: item.album?.cover_medium || item.album?.cover || "",
-              cover_big: item.album?.cover_xl || item.album?.cover_big || item.album?.cover || "",
-              type: "track",
-            });
-          }
-          return NextResponse.json({ ok: true, query, count: results.length, results });
-        }
-      } catch {
-        // Ignorar error de parseo
-      }
-    }
-
+    const raw = err as { message?: string; stderr?: string; stdout?: string; code?: number };
+    console.error("Deezer search error:", raw);
     return NextResponse.json(
-      { error: "Error al buscar en Deezer", details },
+      { error: "Error al buscar en Deezer", details: raw.message || raw.stderr || String(err) },
       { status: 502 }
     );
-  } finally {
-    // Limpiar archivo temporal
-    await rm(tmpDir, { recursive: true, force: true });
   }
 }
