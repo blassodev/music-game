@@ -101,6 +101,9 @@ if __name__ == '__main__':
       const album = track.album || {};
       const artist = track.artist || track.contributors?.[0] || {};
       
+      // Extraer año del release_date del álbum (formato: "YYYY-MM-DD")
+      const year = album.release_date ? album.release_date.substring(0, 4) : "0";
+      
       return {
         id: String(track.id),
         title: track.title || "",
@@ -111,6 +114,7 @@ if __name__ == '__main__':
         preview: track.preview || "",
         cover: album.cover_medium || album.cover || "",
         cover_big: album.cover_big || album.cover_medium || album.cover || "",
+        year,
         type: "track",
       };
     });

@@ -51,6 +51,7 @@ interface DeezerSearchResult {
   preview: string;
   cover: string;
   cover_big: string;
+  year: string;
   type: "track";
 }
 
