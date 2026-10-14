@@ -54,6 +54,12 @@ interface DeezerSearchResult {
   type: "track";
 }
 
+interface DeezerTrackDetail extends DeezerSearchResult {
+  year: string;
+  explicit: boolean;
+  cover_xl: string;
+}
+
 export function UrlImportForm() {
   const router = useRouter();
   const t = useTranslations("admin.songs.import");
@@ -63,7 +69,7 @@ export function UrlImportForm() {
   const [url, setUrl] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [searchResults, setSearchResults] = useState<DeezerSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<(DeezerSearchResult | DeezerTrackDetail)[]>([]);
   const [selectedResult, setSelectedResult] = useState<DeezerSearchResult | null>(null);
   const [selectedQuality, setSelectedQuality] = useState("");
   const [isFetching, setIsFetching] = useState(false);
@@ -123,13 +129,44 @@ export function UrlImportForm() {
     }
   };
 
-  const handleResultSelect = (result: DeezerSearchResult) => {
-    setSelectedResult(result);
-    // Construir URL de Deezer para el track
-    const trackUrl = `https://www.deezer.com/track/${result.id}`;
-    setUrl(trackUrl);
-    // Cambiar a tab URL para mostrar la preview
-    setActiveTab("url");
+  const handleResultSelect = async (result: DeezerSearchResult) => {
+    // Fetch full track details
+    setIsFetching(true);
+    try {
+      const response = await fetch("/api/songs/deezer-track", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ trackId: result.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener detalles del track");
+      }
+
+      if (data.ok && data.track) {
+        const fullTrack = data.track as DeezerTrackDetail;
+        setSelectedResult(fullTrack);
+        // Construir URL de Deezer para el track
+        const trackUrl = `https://www.deezer.com/track/${fullTrack.id}`;
+        setUrl(trackUrl);
+        // Cambiar a tab URL para mostrar la preview
+        setActiveTab("url");
+      }
+    } catch (error) {
+      console.error("Error fetching track details:", error);
+      toast.error("Error al cargar detalles de la canción");
+      // Fallback: usar la info básica de la búsqueda
+      setSelectedResult(result);
+      const trackUrl = `https://www.deezer.com/track/${result.id}`;
+      setUrl(trackUrl);
+      setActiveTab("url");
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -376,57 +413,101 @@ export function UrlImportForm() {
                   <p className="text-sm font-medium">
                     {t("searchResults")} ({searchResults.length})
                   </p>
-                  {searchResults.map((result) => (
-                    <Button
-                      key={result.id}
-                      variant={selectedResult?.id === result.id ? "default" : "outline"}
-                      onClick={() => handleResultSelect(result)}
-                      className="w-full justify-start gap-3 p-3"
-                    >
-                      {result.cover && (
-                        <Image
-                          src={result.cover}
-                          alt=""
-                          width={48}
-                          height={48}
-                          className="h-12 w-12 rounded object-cover"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="font-medium truncate">{result.title}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {result.artist} · {result.album}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDuration(result.duration)}
-                        </p>
-                      </div>
-                      {selectedResult?.id === result.id && (
-                        <Music className="h-5 w-5 text-primary" />
-                      )}
-                    </Button>
-                  ))}
+                  {searchResults.map((result) => {
+                    // Type-safe access to optional properties
+                    const hasYear = 'year' in result && result.year && result.year !== "0";
+                    const hasExplicit = 'explicit' in result && result.explicit;
+                    const isSelected = selectedResult?.id === result.id;
+                    return (
+                      <button
+                        key={result.id}
+                        onClick={() => handleResultSelect(result)}
+                        className={`w-full justify-start gap-3 p-3 rounded-lg border transition-all text-left ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary shadow-md"
+                            : "bg-card hover:bg-accent border-border"
+                        }`}
+                      >
+                        {result.cover && (
+                          <div className="flex-shrink-0">
+                            <Image
+                              src={result.cover}
+                              alt=""
+                              width={64}
+                              height={64}
+                              className="h-16 w-16 rounded object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="font-medium truncate">{result.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {result.artist} · {result.album || "Álbum desconocido"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {result.duration > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatDuration(result.duration)}
+                              </span>
+                            )}
+                            {hasYear && (
+                              <span className="text-xs text-muted-foreground">
+                                {result.year}
+                              </span>
+                            )}
+                            {hasExplicit && (
+                              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                Explicit
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="flex-shrink-0">
+                            <Music className="h-5 w-5 text-primary" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
               {selectedResult && (
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p className="text-sm font-medium">{t("selectedTrack")}</p>
-                  <p className="font-medium">{selectedResult.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedResult.artist} · {selectedResult.album}
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedResult(null);
-                      setUrl("");
-                    }}
-                  >
-                    {t("clearSelection")}
-                  </Button>
-                </div>
+                // Type-safe access to optional properties
+                (() => {
+                  const track = selectedResult as DeezerTrackDetail;
+                  const hasYear = track.year && track.year !== "0";
+                  const hasExplicit = track.explicit;
+                  return (
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                      <p className="text-sm font-medium">{t("selectedTrack")}</p>
+                      <p className="font-medium">{track.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {track.artist} · {track.album || "Álbum desconocido"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {track.duration > 0 && (
+                          <span>{t("duration")}: {formatDuration(track.duration)}</span>
+                        )}
+                        {hasYear && <span>{track.year}</span>}
+                        {hasExplicit && (
+                          <span className="bg-muted px-1.5 py-0.5 rounded">Explicit</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedResult(null);
+                          setUrl("");
+                        }}
+                      >
+                        {t("clearSelection")}
+                      </Button>
+                    </div>
+                  );
+                })()
               )}
             </CardContent>
           </Card>
