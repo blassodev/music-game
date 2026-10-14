@@ -1,0 +1,34 @@
+# Music Game - Next.js + PocketBase
+# Dos contenedores: la app Next.js y su backend PocketBase.
+# Ambos se exponen solo en localhost; el proxy Caddy (host) publica los
+# dominios musica.blassanto.me y pb-musica.blassanto.me y gestiona el TLS.
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: music-game-pocketbase
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8091:8090"
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_migrations:/pb_migrations
+    environment:
+      - TZ=Europe/Madrid
+
+  music-game:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_POCKETBASE_URL: https://pb-musica.blassanto.me
+    image: music-game:latest
+    container_name: music-game
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:3000"
+    volumes:
+      - ./rip-config/config.toml:/app/rip/config.toml
+    environment:
+      - NEXT_PUBLIC_POCKETBASE_URL=https://pb-musica.blassanto.me
+      - TZ=Europe/Madrid
+    depends_on:
+      - pocketbase

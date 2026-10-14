@@ -1,0 +1,218 @@
+{
+  "navigation": {
+    "scanner": "Scanner",
+    "admin": "Admin"
+  },
+  "scanner": {
+    "title": "Scan Music Card",
+    "subtitle": "Point your camera at the QR code on the card",
+    "buttons": {
+      "startScanning": "Start Scanning",
+      "stopScanning": "Stop Scanning",
+      "flashOn": "Flash On",
+      "flashOff": "Flash Off",
+      "testSample": "Test Sample",
+      "checkCamera": "Check Camera"
+    },
+    "messages": {
+      "initializing": "Initializing camera...",
+      "scanSuccess": "Card scanned successfully!",
+      "invalidCard": "Invalid card code",
+      "cameraStarted": "Camera started successfully!",
+      "cameraStopped": "Camera stopped",
+      "testScanSuccess": "Test scan successful!",
+      "cameraPermissionsOk": "Camera permissions OK. Found {count} camera(s)",
+      "camerasAvailable": "{count} camera(s) available"
+    },
+    "errors": {
+      "cameraStart": "Failed to start camera",
+      "elementNotFound": "QR reader element not found. Please try again.",
+      "httpsRequired": "Camera access requires HTTPS. Please use HTTPS or localhost.",
+      "permissionDenied": "Camera permission denied. Please allow camera access and try again.",
+      "noCamera": "No camera found on this device.",
+      "cameraInUse": "Camera is already in use by another application.",
+      "cameraAccess": "Failed to access camera. Please check your camera permissions.",
+      "flashToggle": "Failed to toggle flash",
+      "noCamerasFound": "No cameras found on this device",
+      "permissionCheckFailed": "Camera permission check failed",
+      "permissionDeniedSettings": "Camera permission denied. Please allow camera access in your browser settings.",
+      "constraintsNotSupported": "Camera constraints not supported.",
+      "cameraError": "Camera error: {message}"
+    },
+    "warnings": {
+      "notSecure": "⚠️ Not running in secure context (HTTPS). Camera may not work properly."
+    }
+  },
+  "admin": {
+    "layout": {
+      "title": "Admin Panel",
+      "subtitle": "Manage your music library and decks"
+    },
+    "dashboard": {
+      "stats": {
+        "totalSongs": "Total Songs",
+        "totalDecks": "Total Decks",
+        "totalCards": "Total Cards",
+        "songsDescription": "Songs in your library",
+        "decksDescription": "Active and inactive decks",
+        "cardsDescription": "Cards across all decks"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "manageSongs": "Manage Songs",
+        "manageDecks": "Manage Decks"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "noActivity": "No recent activity to display. Start by managing your songs or decks."
+      }
+    },
+    "navigation": {
+      "dashboard": "Dashboard",
+      "songs": "Songs",
+      "decks": "Decks"
+    },
+    "login": {
+      "pageTitle": "Sign In",
+      "pageSubtitle": "Access the admin panel",
+      "title": "Sign In",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "password": "Password",
+      "passwordPlaceholder": "Your password",
+      "submit": "Sign In",
+      "loading": "Signing in...",
+      "error": "Login error. Please check your credentials."
+    },
+    "userMenu": {
+      "administrator": "Administrator",
+      "settings": "Settings",
+      "logout": "Sign Out"
+    },
+    "songs": {
+      "pageTitle": "Songs Library",
+      "pageSubtitle": "Manage your music collection",
+      "addSong": "Add Song",
+      "importFromUrl": "Import from URL",
+      "editSong": "Edit Song",
+      "createSong": "Create New Song",
+      "deleteSong": "Delete Song",
+      "noSongs": "No songs found",
+      "searchPlaceholder": "Search by title, artist, or album...",
+      "confirmDelete": "Are you sure you want to delete this song?",
+      "deleteSuccess": "Song deleted successfully",
+      "saveSuccess": "Song saved successfully",
+      "form": {
+        "title": "Title",
+        "titlePlaceholder": "Enter song title",
+        "artist": "Artist",
+        "artistPlaceholder": "Enter artist name",
+        "album": "Album",
+        "albumPlaceholder": "Enter album name",
+        "year": "Year",
+        "yearPlaceholder": "Enter release year",
+        "audio": "Audio File",
+        "audioPlaceholder": "Select audio file",
+        "audioRequired": "Audio file is required",
+        "submit": "Save Song",
+        "cancel": "Cancel",
+        "uploading": "Uploading...",
+        "processing": "Processing..."
+      },
+      "import": {
+        "pageTitle": "Import Song from URL",
+        "pageSubtitle": "Download and import songs from YouTube or other platforms",
+        "url": "Video URL",
+        "urlPlaceholder": "Enter YouTube or Deezer URL",
+        "urlRequired": "URL is required",
+        "fetchInfo": "Fetch Info",
+        "fetching": "Fetching video info...",
+        "downloading": "Downloading...",
+        "submit": "Import Song",
+        "preview": "Preview",
+        "videoInfo": "Video Information",
+        "duration": "Duration",
+        "quality": "Audio Quality",
+        "selectQuality": "Select audio quality",
+        "importSuccess": "Song imported successfully",
+        "fetchError": "Error fetching video information",
+        "downloadError": "Error downloading song",
+        "invalidUrl": "Invalid URL format",
+        "tabUrl": "By URL",
+        "tabSearch": "Search Deezer",
+        "searchTitle": "Search Song on Deezer",
+        "searchLabel": "Search",
+        "searchPlaceholder": "Artist, song, album...",
+        "searchBtn": "Search",
+        "searching": "Searching...",
+        "searchHint": "Type at least 2 characters to search Deezer",
+        "searchResults": "Results",
+        "selectedTrack": "Selected track:",
+        "clearSelection": "Clear selection",
+        "importDeezer": "Import from Deezer",
+        "importing": "Importing..."
+      },
+      "bulkImport": {
+        "pageTitle": "Bulk Import Songs",
+        "pageSubtitle": "Import multiple songs at once with automatic metadata extraction"
+      }
+    },
+    "decks": {
+      "pageTitle": "Decks Management",
+      "pageSubtitle": "Organize songs into themed decks",
+      "createDeck": "Create Deck",
+      "editDeck": "Edit Deck",
+      "deleteDeck": "Delete Deck",
+      "noDecks": "No decks found",
+      "searchPlaceholder": "Search decks...",
+      "confirmDelete": "Are you sure you want to delete this deck?",
+      "deleteSuccess": "Deck deleted successfully",
+      "saveSuccess": "Deck saved successfully",
+      "viewDetails": "View Details",
+      "addCard": "Add Card",
+      "form": {
+        "name": "Deck Name",
+        "namePlaceholder": "Enter deck name",
+        "description": "Description",
+        "descriptionPlaceholder": "Enter deck description",
+        "isActive": "Active Status",
+        "isActiveHelp": "Active decks are available for play",
+        "songs": "Songs in Deck",
+        "songsHelp": "Select songs to include in this deck",
+        "submit": "Save Deck",
+        "cancel": "Cancel",
+        "noSongsSelected": "No songs selected",
+        "selectSongs": "Select Songs"
+      }
+    }
+  },
+  "player": {
+    "title": "Playing Song",
+    "subtitle": "Listen and guess the song!",
+    "error": {
+      "title": "Playback Error",
+      "message": "Could not load the audio file. Please try again."
+    },
+    "buttons": {
+      "stop": "Stop",
+      "scanAnother": "Scan Another Card"
+    }
+  },
+  "common": {
+    "language": "Language",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No"
+  }
+}
