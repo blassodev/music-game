@@ -27,6 +27,12 @@ export function QRScanner() {
   const router = useRouter();
   const t = useTranslations("scanner");
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  // html5-qrcode fires the success callback on every decoded frame (~10/s)
+  // until the camera is fully stopped. These guards make sure a single scan is
+  // processed once, avoiding a flood of toasts / duplicate navigations.
+  const handledRef = useRef(false);
+  const processingRef = useRef(false);
+  const lastInvalidRef = useRef<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasFlash, setHasFlash] = useState(false);
@@ -149,6 +155,11 @@ export function QRScanner() {
     );
     setCameraInfo(`Using: ${backCamera?.label || devices[0].label}`);
 
+    // Fresh scan session: clear the single-scan guards.
+    handledRef.current = false;
+    processingRef.current = false;
+    lastInvalidRef.current = null;
+
     // Start scanning with improved configuration
     await scanner.start(
       cameraId,
@@ -181,12 +192,16 @@ export function QRScanner() {
         },
       },
       async (decodedText) => {
+        // Ignore every frame once a code has been handled (see guards above).
+        if (handledRef.current) return;
+
         console.log("QR Code detected:", decodedText);
 
         // Hitster physical cards resolve on the fly via Deezer (no DB entry):
         // http://www.hitstergame.com/{lang}/{sku}/{card}
         const hitster = parseHitsterCode(decodedText);
         if (hitster) {
+          handledRef.current = true;
           toast.success(t("messages.scanSuccess"));
           scanner
             .stop()
@@ -197,8 +212,16 @@ export function QRScanner() {
           return;
         }
 
+        // Serialize the async PocketBase validation so concurrent frames don't
+        // each fire their own request + toast.
+        if (processingRef.current) return;
+        processingRef.current = true;
         const isValid = await validateCardCode(decodedText);
+        processingRef.current = false;
+        if (handledRef.current) return;
+
         if (isValid) {
+          handledRef.current = true;
           toast.success(t("messages.scanSuccess"));
           scanner
             .stop()
@@ -206,7 +229,9 @@ export function QRScanner() {
               router.push(`/player/${decodedText}`);
             })
             .catch(console.error);
-        } else {
+        } else if (lastInvalidRef.current !== decodedText) {
+          // Warn only once per distinct invalid code, not on every frame.
+          lastInvalidRef.current = decodedText;
           toast.error(t("messages.invalidCard") + ": " + decodedText);
         }
       },
