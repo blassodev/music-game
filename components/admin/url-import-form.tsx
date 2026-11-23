@@ -24,6 +24,7 @@ import {
 import { Loader2, Download, ExternalLink, Search, Music } from "lucide-react";
 import { toast } from "sonner";
 import pb from "@/lib/pocketbase";
+import { withBasePath } from "@/lib/base-path";
 
 interface VideoInfo {
   title: string;
@@ -95,7 +96,7 @@ export function UrlImportForm() {
   const handleDeezerImport = async () => {
     setIsFetching(true);
     try {
-      const response = await fetch("/api/songs/import-deezer", {
+      const response = await fetch(withBasePath("/api/songs/import-deezer"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +135,7 @@ export function UrlImportForm() {
     // Fetch full track details
     setIsFetching(true);
     try {
-      const response = await fetch("/api/songs/deezer-track", {
+      const response = await fetch(withBasePath("/api/songs/deezer-track"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -178,7 +179,7 @@ export function UrlImportForm() {
 
     setIsSearching(true);
     try {
-      const response = await fetch("/api/songs/search-deezer", {
+      const response = await fetch(withBasePath("/api/songs/search-deezer"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +227,7 @@ export function UrlImportForm() {
 
     setIsFetching(true);
     try {
-      const response = await fetch("/api/songs/import", {
+      const response = await fetch(withBasePath("/api/songs/import"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

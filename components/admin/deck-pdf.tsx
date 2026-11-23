@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
   qrCard: {
     width: "64mm",
     height: "64mm",
-    border: "1pt solid #000000",
     margin: 2,
     display: "flex",
     justifyContent: "center",
@@ -93,10 +92,13 @@ export const DeckPDF: React.FC<DeckPDFProps> = ({ cards, deckName }) => {
   const CARDS_PER_PAGE = 12; // 4 filas x 3 columnas
 
   const getCardYear = (card: CardWithDetails) => {
-    if (card.songData) {
-      return card.songData.year?.toString() || "N/A";
+    if (card.year) {
+      return card.year;
     }
-    return card.year || "N/A";
+    if (card.songData?.year != null) {
+      return card.songData.year.toString();
+    }
+    return "N/A";
   };
 
   const renderCardContent = (card: CardWithDetails) => {

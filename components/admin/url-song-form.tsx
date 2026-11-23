@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Info } from "lucide-react";
 import pb from "@/lib/pocketbase";
+import { withBasePath } from "@/lib/base-path";
 import { toast } from "sonner";
 
 interface VideoInfo {
@@ -78,7 +79,7 @@ export function UrlSongForm() {
 
     setIsFetching(true);
     try {
-      const response = await fetch("/api/songs/import", {
+      const response = await fetch(withBasePath("/api/songs/import"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -12,6 +12,8 @@ FROM base AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_POCKETBASE_URL
 ENV NEXT_PUBLIC_POCKETBASE_URL=$NEXT_PUBLIC_POCKETBASE_URL
+# Only the Docker image needs the standalone server output.
+ENV NEXT_OUTPUT=standalone
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

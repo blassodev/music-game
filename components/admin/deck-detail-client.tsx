@@ -183,10 +183,13 @@ export function DeckDetailClient({
   };
 
   const getCardYear = (card: CardWithDetails) => {
-    if (card.type === "song" && card.songData) {
-      return card.songData.year?.toString() || "N/A";
+    if (card.year) {
+      return card.year;
     }
-    return card.year || "N/A";
+    if (card.songData?.year != null) {
+      return card.songData.year.toString();
+    }
+    return "N/A";
   };
 
   return (
