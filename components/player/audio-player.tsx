@@ -26,23 +26,38 @@ function formatDuration(seconds: number): string {
 }
 
 interface AudioPlayerProps {
-  song: SongsRecord;
+  /** PocketBase song record (normal cards). */
+  song?: SongsRecord;
+  /**
+   * Direct audio URL. Takes precedence over `song`. Used by the Hitster flow,
+   * which streams an on-the-fly Deezer download instead of a stored file.
+   */
+  audioUrl?: string;
+  /** Label shown in the debug panels when there is no `song`. */
+  debugId?: string;
 }
 
-export function AudioPlayer({ song }: AudioPlayerProps) {
+export function AudioPlayer({
+  song,
+  audioUrl: audioUrlProp,
+  debugId,
+}: AudioPlayerProps) {
   const router = useRouter();
   const t = useTranslations("player");
 
-  // Generar la URL del audio del lado del cliente
+  // Generar la URL del audio: directa (Hitster) o desde PocketBase (carta normal)
   const audioUrl = useMemo(() => {
-    if (!song.audio) {
-      console.warn("No audio file available for song:", song.id);
+    if (audioUrlProp) return audioUrlProp;
+    if (!song || !song.audio) {
+      if (song) console.warn("No audio file available for song:", song.id);
       return "";
     }
+    return pb.files.getURL(song, song.audio);
+  }, [audioUrlProp, song]);
 
-    const url = pb.files.getURL(song, song.audio);
-    return url;
-  }, [song]);
+  // Etiquetas para los paneles de depuración (sin revelar info de la canción)
+  const idLabel = debugId ?? song?.id ?? "";
+  const audioFileLabel = song?.audio ?? (audioUrlProp ? "stream" : "");
 
   const { state, playback, play, pause, stop, forward10, backward10, seek } =
     useAudioPlayer(audioUrl);
@@ -78,10 +93,10 @@ export function AudioPlayer({ song }: AudioPlayerProps) {
           {/* Debug info */}
           <div className="mb-6 p-3 bg-muted rounded text-left text-xs space-y-1">
             <div>
-              <strong>Song ID:</strong> {song.id}
+              <strong>Song ID:</strong> {idLabel}
             </div>
             <div>
-              <strong>Audio file:</strong> {song.audio || "No audio file"}
+              <strong>Audio file:</strong> {audioFileLabel || "No audio file"}
             </div>
           </div>
 
@@ -125,10 +140,10 @@ export function AudioPlayer({ song }: AudioPlayerProps) {
           {/* Debug info */}
           <div className="mb-6 p-3 bg-muted rounded text-left text-xs space-y-1">
             <div>
-              <strong>Song ID:</strong> {song.id}
+              <strong>Song ID:</strong> {idLabel}
             </div>
             <div>
-              <strong>Audio file:</strong> {song.audio || "No audio file"}
+              <strong>Audio file:</strong> {audioFileLabel || "No audio file"}
             </div>
             <div>
               <strong>Generated URL:</strong> {audioUrl || "No URL generated"}

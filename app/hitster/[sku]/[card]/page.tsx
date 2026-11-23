@@ -1,5 +1,6 @@
+import { AudioPlayer } from "@/components/player/audio-player";
 import { HitsterErrorCard } from "@/components/player/hitster-error";
-import { HitsterPlayer } from "@/components/player/hitster-player";
+import { withBasePath } from "@/lib/base-path";
 import { toErrorCode } from "@/lib/hitster/errors";
 import { resolveHitsterCard } from "@/lib/hitster/resolve";
 
@@ -13,10 +14,20 @@ export default async function HitsterPage({
 }) {
   const { sku, card } = await params;
 
+  // Validate the card and warm the resolve cache. We deliberately do NOT pass
+  // any song metadata to the player: a Hitster card must look and behave
+  // exactly like any other card (generic UI, autoplay, no title/artist/cover).
   try {
-    const meta = await resolveHitsterCard(sku, card);
-    return <HitsterPlayer meta={meta} />;
+    await resolveHitsterCard(sku, card);
   } catch (err) {
     return <HitsterErrorCard code={toErrorCode(err)} sku={sku} card={card} />;
   }
+
+  const streamUrl = withBasePath(
+    `/api/hitster/stream?sku=${encodeURIComponent(sku)}&card=${encodeURIComponent(
+      card
+    )}`
+  );
+
+  return <AudioPlayer audioUrl={streamUrl} debugId={`${sku}/${card}`} />;
 }
