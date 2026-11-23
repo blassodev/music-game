@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,15 @@ import { SongsRecord } from "@/lib/types/pocketbase";
 import { parseHitsterCode } from "@/lib/hitster/parse";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+
+// Stable toast ids: sonner replaces a toast with the same id instead of
+// stacking a new one, so bursts of decoded frames can never flood the screen.
+const RESULT_TOAST_ID = "qr-scan-result";
+const ERROR_TOAST_ID = "qr-scanner-error";
+
+// Re-warn cooldown for the same invalid code: while a user keeps pointing at
+// an invalid card the toast refreshes at most once per interval.
+const INVALID_REWARN_MS = 5000;
 
 async function validateCardCode(cardCode: string): Promise<boolean> {
   try {
@@ -27,12 +36,13 @@ export function QRScanner() {
   const router = useRouter();
   const t = useTranslations("scanner");
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  // html5-qrcode fires the success callback on every decoded frame (~10/s)
+  const scanAreaRef = useRef<HTMLDivElement | null>(null);
+  // html5-qrcode fires the success callback on every decoded frame (~15/s)
   // until the camera is fully stopped. These guards make sure a single scan is
   // processed once, avoiding a flood of toasts / duplicate navigations.
   const handledRef = useRef(false);
   const processingRef = useRef(false);
-  const lastInvalidRef = useRef<string | null>(null);
+  const lastInvalidRef = useRef<{ code: string; at: number } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasFlash, setHasFlash] = useState(false);
@@ -48,12 +58,16 @@ export function QRScanner() {
     }
 
     return () => {
-      if (scannerRef.current) {
-        if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().catch(console.error);
-        }
+      const scanner = scannerRef.current;
+      if (!scanner) return;
+      if (scanner.isScanning) {
+        scanner
+          .stop()
+          .then(() => scanner.clear())
+          .catch(console.error);
+      } else {
         try {
-          scannerRef.current.clear();
+          scanner.clear();
         } catch (error) {
           console.error("Error clearing scanner:", error);
         }
@@ -61,24 +75,123 @@ export function QRScanner() {
     };
   }, []);
 
-  const handleScannerError = (err: unknown) => {
-    console.error("Scanner error:", err);
-    let errorMsg = t("errors.cameraStart");
-
-    if (err instanceof Error) {
-      errorMsg = err.message;
-    } else if (typeof err === "string") {
-      errorMsg = err;
+  /** Translate raw camera/getUserMedia failures into friendly messages. */
+  const mapCameraError = (err: unknown): string => {
+    if (err instanceof DOMException) {
+      switch (err.name) {
+        case "NotAllowedError":
+          return t("errors.permissionDenied");
+        case "NotFoundError":
+          return t("errors.noCamera");
+        case "NotReadableError":
+          return t("errors.cameraInUse");
+        case "OverconstrainedError":
+          return t("errors.constraintsNotSupported");
+      }
+      return err.message || t("errors.cameraAccess");
     }
 
+    // html5-qrcode wraps getUserMedia failures into a plain string like
+    // "Error getting userMedia, error = NotAllowedError: Permission denied"
+    const text =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "";
+    if (/NotAllowedError|Permission denied/i.test(text)) {
+      return t("errors.permissionDenied");
+    }
+    if (/NotFoundError|Requested device not found/i.test(text)) {
+      return t("errors.noCamera");
+    }
+    if (/NotReadableError|already in use/i.test(text)) {
+      return t("errors.cameraInUse");
+    }
+    if (/OverconstrainedError/i.test(text)) {
+      return t("errors.constraintsNotSupported");
+    }
+    return text || t("errors.cameraStart");
+  };
+
+  const handleScannerError = (err: unknown) => {
+    console.error("Scanner error:", err);
+    const errorMsg = mapCameraError(err);
     setError(errorMsg);
     setIsScanning(false);
     setIsInitializing(false);
-    toast.error(errorMsg);
+    setCameraInfo("");
+    toast.error(errorMsg, { id: ERROR_TOAST_ID });
+  };
+
+  /** Stop the camera without user-facing toasts (state is visible in the UI). */
+  const stopScannerQuietly = async () => {
+    const scanner = scannerRef.current;
+    setIsFlashOn(false);
+    if (!scanner) return;
+    try {
+      if (scanner.isScanning) {
+        await scanner.stop();
+      }
+      scanner.clear();
+    } catch (e) {
+      console.warn("Error stopping scanner:", e);
+    }
+  };
+
+  /** Single entry point for a successfully decoded QR payload. */
+  const handleDecodedText = async (decodedText: string) => {
+    // Ignore every frame once a code has been handled (see guards above).
+    if (handledRef.current) return;
+
+    // Hitster physical cards resolve on the fly via Deezer (no DB entry):
+    // http://www.hitstergame.com/{lang}/{sku}/{card}
+    const hitster = parseHitsterCode(decodedText);
+    if (hitster) {
+      handledRef.current = true;
+      toast.success(t("messages.scanSuccess"), { id: RESULT_TOAST_ID });
+      await stopScannerQuietly();
+      setIsScanning(false);
+      setCameraInfo("");
+      router.push(`/hitster/${hitster.sku}/${hitster.card}`);
+      return;
+    }
+
+    // Serialize the async PocketBase validation so concurrent frames don't
+    // each fire their own request + toast.
+    if (processingRef.current) return;
+    processingRef.current = true;
+    let isValid = false;
+    try {
+      isValid = await validateCardCode(decodedText);
+    } finally {
+      processingRef.current = false;
+    }
+    if (handledRef.current) return;
+
+    if (isValid) {
+      handledRef.current = true;
+      toast.success(t("messages.scanSuccess"), { id: RESULT_TOAST_ID });
+      await stopScannerQuietly();
+      setIsScanning(false);
+      setCameraInfo("");
+      router.push(`/player/${decodedText}`);
+      return;
+    }
+
+    // Invalid code: warn once per code, re-warning at most every
+    // INVALID_REWARN_MS while the same code stays in view. The shared toast
+    // id guarantees the warning replaces (never stacks with) other toasts.
+    const now = Date.now();
+    const last = lastInvalidRef.current;
+    const isRepeat =
+      last?.code === decodedText && now - last.at < INVALID_REWARN_MS;
+    if (!isRepeat) {
+      lastInvalidRef.current = { code: decodedText, at: now };
+      toast.error(`${t("messages.invalidCard")}: ${decodedText}`, {
+        id: RESULT_TOAST_ID,
+      });
+    }
   };
 
   const initializeScanner = async () => {
-    // Check if the qr-reader element exists
+    // Check if the qr-reader element exists (it is rendered while scanning)
     const qrReaderElement = document.getElementById("qr-reader");
     if (!qrReaderElement) {
       throw new Error(t("errors.elementNotFound"));
@@ -94,23 +207,6 @@ export function QRScanner() {
       throw new Error(t("errors.httpsRequired"));
     }
 
-    // Request camera permissions explicitly
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach((track) => track.stop()); // Stop the test stream
-    } catch (permissionError) {
-      if (permissionError instanceof DOMException) {
-        if (permissionError.name === "NotAllowedError") {
-          throw new Error(t("errors.permissionDenied"));
-        } else if (permissionError.name === "NotFoundError") {
-          throw new Error(t("errors.noCamera"));
-        } else if (permissionError.name === "NotReadableError") {
-          throw new Error(t("errors.cameraInUse"));
-        }
-      }
-      throw new Error(t("errors.cameraAccess"));
-    }
-
     // Clean up any existing scanner instance
     if (scannerRef.current) {
       try {
@@ -123,222 +219,120 @@ export function QRScanner() {
       }
     }
 
-    const scanner = new Html5Qrcode("qr-reader");
+    const scanner = new Html5Qrcode("qr-reader", {
+      // Decode QR only: by default the ZXing fallback tries ~15 barcode
+      // formats per frame, which slows detection down significantly.
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      // Prefer the browser-native BarcodeDetector (much faster) when
+      // available; html5-qrcode falls back to ZXing automatically.
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      verbose: false,
+    });
     scannerRef.current = scanner;
-
-    // Get available cameras
-    let devices;
-    try {
-      devices = await Html5Qrcode.getCameras();
-    } catch {
-      throw new Error(t("errors.enumerateCameras"));
-    }
-
-    if (!devices || devices.length === 0) {
-      throw new Error(t("errors.noCamerasFound"));
-    }
-
-    console.log("Available cameras:", devices);
-
-    // Prefer back camera, fallback to any available camera
-    const backCamera = devices.find(
-      (device) =>
-        device.label.toLowerCase().includes("back") ||
-        device.label.toLowerCase().includes("environment")
-    );
-    const cameraId = backCamera?.id || devices[0].id;
-
-    console.log(
-      "Using camera:",
-      cameraId,
-      backCamera?.label || devices[0].label
-    );
-    setCameraInfo(`Using: ${backCamera?.label || devices[0].label}`);
 
     // Fresh scan session: clear the single-scan guards.
     handledRef.current = false;
     processingRef.current = false;
     lastInvalidRef.current = null;
 
-    // Start scanning with improved configuration
+    // One single camera open: no getUserMedia pre-check, no getCameras()
+    // enumeration — facingMode selects the back camera directly.
     await scanner.start(
-      cameraId,
+      { facingMode: "environment" },
       {
-        fps: 10,
-        qrbox: function (viewfinderWidth, viewfinderHeight) {
-          // Make qrbox responsive to container size with better mobile scaling
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const isMobile = window.innerWidth < 768; // Mobile detection
-
-          // Use a larger percentage for mobile to make the scanning area more generous
-          const scaleFactor = isMobile ? 0.85 : 0.7;
-          const qrboxSize = Math.floor(minEdge * scaleFactor);
-
-          // Ensure minimum size for usability
-          const minSize = isMobile ? 200 : 150;
-          const finalSize = Math.max(qrboxSize, minSize);
-
-          return {
-            width: finalSize,
-            height: finalSize,
-          };
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          // Centered square covering 80% of the short edge. Never force an
+          // absolute minimum here: a qrbox taller than the viewfinder makes
+          // html5-qrcode skip the scan-region shading entirely.
+          const size = Math.floor(
+            Math.min(viewfinderWidth, viewfinderHeight) * 0.8
+          );
+          // Publish the real scan-box size so the decorative scan line stays
+          // aligned with the region actually being decoded.
+          scanAreaRef.current?.style.setProperty("--qr-box", `${size}px`);
+          return { width: size, height: size };
         },
-        aspectRatio: 1.0,
         disableFlip: false,
+        // `ideal` constraints never throw: devices that cannot deliver a
+        // square stream simply fall back to their default aspect ratio,
+        // and the container below adapts to the resulting video height.
         videoConstraints: {
-          facingMode: "environment", // Use back camera
-          width: { ideal: 1280, min: 480, max: 1920 },
-          height: { ideal: 720, min: 480, max: 1080 },
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 1280 },
+          aspectRatio: { ideal: 1 },
         },
       },
-      async (decodedText) => {
-        // Ignore every frame once a code has been handled (see guards above).
-        if (handledRef.current) return;
-
-        console.log("QR Code detected:", decodedText);
-
-        // Hitster physical cards resolve on the fly via Deezer (no DB entry):
-        // http://www.hitstergame.com/{lang}/{sku}/{card}
-        const hitster = parseHitsterCode(decodedText);
-        if (hitster) {
-          handledRef.current = true;
-          toast.success(t("messages.scanSuccess"));
-          scanner
-            .stop()
-            .then(() => {
-              router.push(`/hitster/${hitster.sku}/${hitster.card}`);
-            })
-            .catch(console.error);
-          return;
-        }
-
-        // Serialize the async PocketBase validation so concurrent frames don't
-        // each fire their own request + toast.
-        if (processingRef.current) return;
-        processingRef.current = true;
-        const isValid = await validateCardCode(decodedText);
-        processingRef.current = false;
-        if (handledRef.current) return;
-
-        if (isValid) {
-          handledRef.current = true;
-          toast.success(t("messages.scanSuccess"));
-          scanner
-            .stop()
-            .then(() => {
-              router.push(`/player/${decodedText}`);
-            })
-            .catch(console.error);
-        } else if (lastInvalidRef.current !== decodedText) {
-          // Warn only once per distinct invalid code, not on every frame.
-          lastInvalidRef.current = decodedText;
-          toast.error(t("messages.invalidCard") + ": " + decodedText);
-        }
-      },
-      (errorMessage) => {
-        // Only log scanning errors, don't show to user
-        console.log("QR scanning error:", errorMessage);
+      handleDecodedText,
+      () => {
+        // Frames without a decodable code arrive here ~15 times per second;
+        // intentionally ignored.
       }
     );
 
-    // Try to get flash capabilities
+    // Flash (torch) support and camera label
     try {
-      const capabilities = await scanner.getRunningTrackCameraCapabilities();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setHasFlash(!!(capabilities as any).torch);
+      const torch = scanner.getRunningTrackCameraCapabilities().torchFeature();
+      setHasFlash(torch.isSupported());
+      setIsFlashOn(!!torch.value());
     } catch {
       setHasFlash(false);
+      setIsFlashOn(false);
+    }
+    try {
+      // MediaTrackSettings includes `label` at runtime (Chrome/Firefox)
+      // but the TS DOM lib does not declare it.
+      const settings = scanner.getRunningTrackSettings() as MediaTrackSettings & {
+        label?: string;
+      };
+      setCameraInfo(settings.label || "");
+    } catch {
+      setCameraInfo("");
     }
 
     setIsInitializing(false);
-
-    // Apply custom styles to video element for better sizing
-    setTimeout(() => {
-      const qrReaderElement = document.getElementById("qr-reader");
-      if (qrReaderElement) {
-        const video = qrReaderElement.querySelector("video");
-        const canvas = qrReaderElement.querySelector("canvas");
-
-        if (video) {
-          video.style.width = "100%";
-          video.style.height = "100%";
-          video.style.maxWidth = "100%";
-          video.style.objectFit = "cover";
-          video.style.objectPosition = "center";
-        }
-
-        if (canvas) {
-          canvas.style.width = "100%";
-          canvas.style.height = "100%";
-          canvas.style.maxWidth = "100%";
-          canvas.style.position = "absolute";
-          canvas.style.top = "0";
-          canvas.style.left = "0";
-        }
-
-        // Make sure the container has proper positioning
-        qrReaderElement.style.position = "relative";
-        qrReaderElement.style.overflow = "hidden";
-      }
-    }, 500);
-
-    toast.success(t("messages.cameraStarted"));
   };
 
   const startScanning = async () => {
-    try {
-      setError(null);
-      setIsInitializing(true);
-      setIsScanning(true);
+    setError(null);
+    setIsInitializing(true);
+    setIsScanning(true);
 
-      // Use setTimeout to ensure DOM is rendered
-      setTimeout(async () => {
-        try {
-          await initializeScanner();
-        } catch (err) {
-          handleScannerError(err);
-        }
-      }, 100);
-    } catch (err) {
-      handleScannerError(err);
-    }
+    // Let React render the (now visible) scan area first: html5-qrcode
+    // measures the container's clientWidth when start() runs. If it is still
+    // display:none the video renders at a 300px fallback and the scan region
+    // ends up misaligned with the stretched video.
+    setTimeout(async () => {
+      try {
+        await initializeScanner();
+      } catch (err) {
+        handleScannerError(err);
+      }
+    }, 100);
   };
 
   const stopScanning = async () => {
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) {
-          await scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
-        setIsScanning(false);
-        setIsFlashOn(false);
-        setCameraInfo("");
-        toast.success(t("messages.cameraStopped"));
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
-        setIsScanning(false);
-        setIsFlashOn(false);
-        setCameraInfo("");
-      }
-    }
+    await stopScannerQuietly();
+    setIsScanning(false);
+    setIsInitializing(false);
+    setCameraInfo("");
   };
 
   const toggleFlash = async () => {
-    if (scannerRef.current?.isScanning) {
-      try {
-        const track = scannerRef.current.getRunningTrackCameraCapabilities();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((track as any).torch) {
-          await scannerRef.current.applyVideoConstraints(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            { advanced: [{ torch: !isFlashOn }] } as any
-          );
-          setIsFlashOn(!isFlashOn);
-        }
-      } catch {
-        toast.error(t("errors.flashToggle"));
+    const scanner = scannerRef.current;
+    if (!scanner?.isScanning) return;
+    try {
+      const torch = scanner.getRunningTrackCameraCapabilities().torchFeature();
+      if (!torch.isSupported()) {
+        setHasFlash(false);
+        return;
       }
+      const next = !isFlashOn;
+      await torch.apply(next);
+      setIsFlashOn(next);
+    } catch {
+      toast.error(t("errors.flashToggle"), { id: ERROR_TOAST_ID });
     }
   };
 
@@ -365,48 +359,27 @@ export function QRScanner() {
       stream.getTracks().forEach((track) => track.stop());
 
       toast.success(
-        t("messages.cameraPermissionsOk", { count: videoDevices.length })
+        t("messages.cameraPermissionsOk", { count: videoDevices.length }),
+        { id: ERROR_TOAST_ID }
       );
       setCameraInfo(
         t("messages.camerasAvailable", { count: videoDevices.length })
       );
     } catch (err) {
-      let errorMsg = t("errors.permissionCheckFailed");
-
-      if (err instanceof DOMException) {
-        switch (err.name) {
-          case "NotAllowedError":
-            errorMsg = t("errors.permissionDeniedSettings");
-            break;
-          case "NotFoundError":
-            errorMsg = t("errors.noCamera");
-            break;
-          case "NotReadableError":
-            errorMsg = t("errors.cameraInUse");
-            break;
-          case "OverconstrainedError":
-            errorMsg = t("errors.constraintsNotSupported");
-            break;
-          default:
-            errorMsg = t("errors.cameraError", { message: err.message });
-        }
-      } else if (err instanceof Error) {
-        errorMsg = err.message;
-      }
-
+      const errorMsg = mapCameraError(err);
       setError(errorMsg);
-      toast.error(errorMsg);
+      toast.error(errorMsg, { id: ERROR_TOAST_ID });
     }
   };
 
   const simulateScan = () => {
     const testCode = "CARD-ROCK-001-A1B2";
-    toast.success(t("messages.testScanSuccess"));
+    toast.success(t("messages.testScanSuccess"), { id: RESULT_TOAST_ID });
     router.push(`/player/${testCode}`);
   };
 
   const simulateHitsterScan = () => {
-    toast.success(t("messages.testScanSuccess"));
+    toast.success(t("messages.testScanSuccess"), { id: RESULT_TOAST_ID });
     router.push("/hitster/aaaa0064/00281");
   };
 
@@ -479,29 +452,32 @@ export function QRScanner() {
             </div>
           )}
 
-          {isInitializing && (
-            <div className="flex flex-col items-center space-y-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="text-sm text-muted-foreground">
-                {t("messages.initializing")}
-              </p>
+          {/* Scan area: rendered only while scanning and always visible
+              (never display:none) so html5-qrcode measures the real width.
+              Height is driven by the video itself — no fixed 450px box. */}
+          {isScanning && (
+            <div
+              ref={scanAreaRef}
+              className={`qr-scan-area relative w-full overflow-hidden rounded-xl bg-black ${
+                isInitializing ? "min-h-64" : ""
+              }`}
+            >
+              <div id="qr-reader" className="w-full" />
+
+              {isInitializing ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-white" />
+                  <p className="text-sm text-white/90">
+                    {t("messages.initializing")}
+                  </p>
+                </div>
+              ) : (
+                <div className="qr-scanline-box" aria-hidden="true">
+                  <div className="qr-scanline" />
+                </div>
+              )}
             </div>
           )}
-
-          {/* Always render the qr-reader element, but hide it when not scanning */}
-          <div
-            id="qr-reader"
-            className={`relative overflow-hidden rounded-lg border-4 border-primary w-full ${
-              isScanning && !isInitializing ? "block" : "hidden"
-            }`}
-            style={{
-              height: "450px",
-              maxWidth: "100%",
-              width: "100%",
-            }}
-          >
-            {/* El contenido del scanner se renderiza aquí por html5-qrcode */}
-          </div>
 
           {isScanning && !isInitializing && (
             <div className="flex gap-2">

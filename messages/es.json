@@ -19,8 +19,6 @@
       "initializing": "Inicializando cámara...",
       "scanSuccess": "¡Carta escaneada exitosamente!",
       "invalidCard": "Código de carta inválido",
-      "cameraStarted": "¡Cámara iniciada exitosamente!",
-      "cameraStopped": "Cámara detenida",
       "testScanSuccess": "¡Escaneo de prueba exitoso!",
       "cameraPermissionsOk": "Permisos de cámara OK. Se encontraron {count} cámara(s)",
       "camerasAvailable": "{count} cámara(s) disponible(s)"

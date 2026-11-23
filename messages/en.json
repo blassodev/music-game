@@ -19,8 +19,6 @@
       "initializing": "Initializing camera...",
       "scanSuccess": "Card scanned successfully!",
       "invalidCard": "Invalid card code",
-      "cameraStarted": "Camera started successfully!",
-      "cameraStopped": "Camera stopped",
       "testScanSuccess": "Test scan successful!",
       "cameraPermissionsOk": "Camera permissions OK. Found {count} camera(s)",
       "camerasAvailable": "{count} camera(s) available"

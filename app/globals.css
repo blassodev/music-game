@@ -126,33 +126,70 @@
   width: 100% !important;
 }
 
+/* Let html5-qrcode drive the video height so the decode region (qrbox)
+   always matches the visible pixels. Never use object-fit: cover here:
+   the library maps the scanned area through the element's client box. */
 #qr-reader video {
   width: 100% !important;
   height: auto !important;
   max-width: 100% !important;
-  object-fit: cover !important;
-  border-radius: 0.5rem;
+  display: block;
 }
 
-#qr-reader canvas {
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
-  border-radius: 0.5rem;
+/* Slightly darker mask around the scan box for better contrast */
+#qr-shaded-region {
+  border-color: rgba(0, 0, 0, 0.55) !important;
 }
 
-#qr-reader__scan_region {
-  border: 2px solid hsl(var(--primary)) !important;
+/* Round the default corner brackets (white, turn green on a match) */
+#qr-shaded-region > div {
+  border-radius: 999px;
 }
 
-#qr-reader__camera_selection {
-  display: none !important;
+/* Decorative scan line, aligned with the real qrbox through --qr-box
+   (published by the scanner's qrbox callback) */
+.qr-scanline-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--qr-box, 70%);
+  height: var(--qr-box, 70%);
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
 }
 
-#qr-reader__dashboard {
-  display: none !important;
+.qr-scanline {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(74, 222, 128, 0.9) 20%,
+    rgba(74, 222, 128, 0.9) 80%,
+    transparent
+  );
+  box-shadow: 0 0 12px 2px rgba(74, 222, 128, 0.45);
+  animation: qr-scanline-move 2.4s ease-in-out infinite;
 }
 
-#qr-reader__filesystem_button {
-  display: none !important;
+@keyframes qr-scanline-move {
+  0%,
+  100% {
+    top: 2%;
+  }
+  50% {
+    top: calc(100% - 2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-scanline {
+    animation: none;
+    top: 50%;
+  }
 }
