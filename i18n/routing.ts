@@ -13,6 +13,7 @@ export const routing = defineRouting({
     "/": "/",
     "/admin": "/admin",
     "/player": "/player",
+    "/hitster": "/hitster",
   },
 });
 

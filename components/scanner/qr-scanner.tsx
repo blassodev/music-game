@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Flashlight, QrCode, Scan } from "lucide-react";
 import pb from "@/lib/pocketbase";
 import { SongsRecord } from "@/lib/types/pocketbase";
+import { parseHitsterCode } from "@/lib/hitster/parse";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
@@ -181,6 +182,21 @@ export function QRScanner() {
       },
       async (decodedText) => {
         console.log("QR Code detected:", decodedText);
+
+        // Hitster physical cards resolve on the fly via Deezer (no DB entry):
+        // http://www.hitstergame.com/{lang}/{sku}/{card}
+        const hitster = parseHitsterCode(decodedText);
+        if (hitster) {
+          toast.success(t("messages.scanSuccess"));
+          scanner
+            .stop()
+            .then(() => {
+              router.push(`/hitster/${hitster.sku}/${hitster.card}`);
+            })
+            .catch(console.error);
+          return;
+        }
+
         const isValid = await validateCardCode(decodedText);
         if (isValid) {
           toast.success(t("messages.scanSuccess"));
@@ -364,6 +380,11 @@ export function QRScanner() {
     router.push(`/player/${testCode}`);
   };
 
+  const simulateHitsterScan = () => {
+    toast.success(t("messages.testScanSuccess"));
+    router.push("/hitster/aaaa0064/00281");
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-4">
       <Card className="w-full max-w-lg md:max-w-xl overflow-hidden">
@@ -421,6 +442,13 @@ export function QRScanner() {
                   className="h-10 text-sm"
                 >
                   {t("buttons.testSample")}
+                </Button>
+                <Button
+                  onClick={simulateHitsterScan}
+                  variant="outline"
+                  className="col-span-2 h-10 text-sm"
+                >
+                  {t("buttons.testHitster")}
                 </Button>
               </div>
             </div>

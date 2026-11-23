@@ -12,7 +12,8 @@
       "flashOn": "Flash On",
       "flashOff": "Flash Off",
       "testSample": "Test Sample",
-      "checkCamera": "Check Camera"
+      "checkCamera": "Check Camera",
+      "testHitster": "Test Hitster Card"
     },
     "messages": {
       "initializing": "Initializing camera...",
@@ -196,6 +197,29 @@
     "buttons": {
       "stop": "Stop",
       "scanAnother": "Scan Another Card"
+    }
+  },
+  "hitster": {
+    "title": "Playing",
+    "resolving": "Resolving card…",
+    "downloading": "Downloading song…",
+    "downloadHint": "The first playback may take a few seconds while the song downloads.",
+    "gameset": "Gameset",
+    "error": {
+      "title": "Could not resolve the card",
+      "invalid_code": "The card code is not valid.",
+      "card_not_found": "We couldn't find this card in the Hitster database.",
+      "no_match": "We couldn't find this song on Deezer.",
+      "spotify_unavailable": "Could not get the song info from Spotify.",
+      "download_failed": "Error downloading the song from Deezer. Please try again.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "buttons": {
+      "play": "Play",
+      "pause": "Pause",
+      "stop": "Stop",
+      "retry": "Retry",
+      "scanAnother": "Scan another card"
     }
   },
   "common": {
