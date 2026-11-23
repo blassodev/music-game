@@ -6,7 +6,8 @@
     "dev": "node scripts/serve.mjs dev",
     "build": "node scripts/serve.mjs build",
     "start": "node scripts/serve.mjs start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "engines": {
     "node": "20"

@@ -11,14 +11,13 @@ export async function generateMetadata({
   return {
     title: t("title"),
     description: t("description"),
-    manifest: "/manifest.json",
+    // The web manifest and app icons are provided by the file conventions
+    // app/manifest.ts, app/icon.svg and app/apple-icon.png, which Next.js
+    // links into <head> automatically.
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
       title: t("appTitle"),
-    },
-    icons: {
-      apple: "/icons/icon-192x192.png",
     },
   };
 }

@@ -32,6 +32,71 @@ async function validateCardCode(cardCode: string): Promise<boolean> {
   }
 }
 
+/** Minimal shape of html5-qrcode's internal decoder shim (private API). */
+type QrcodeDecoderShim = {
+  decodeAsync(canvas: HTMLCanvasElement): Promise<unknown>;
+};
+
+/**
+ * Support inverted QR codes (light modules on a dark background).
+ *
+ * Both decoders used by html5-qrcode (the native BarcodeDetector and its
+ * bundled ZXing build) only look for standard polarity — dark modules over a
+ * light background — and the library exposes no hook to change that. So we
+ * wrap its internal shim: when a frame fails to decode, we retry once with a
+ * pixel-inverted copy, which turns inverted codes into standard ones. On
+ * success the original result object is returned untouched.
+ */
+function enableInvertedQrSupport(scanner: Html5Qrcode) {
+  const shim = (scanner as unknown as { qrcode?: QrcodeDecoderShim }).qrcode;
+  if (!shim || typeof shim.decodeAsync !== "function") {
+    return; // Unexpected internals: standard-polarity scanning still works.
+  }
+
+  const originalDecodeAsync = shim.decodeAsync.bind(shim);
+  let invertedCanvas: HTMLCanvasElement | null = null;
+
+  const decodeInverted = (canvas: HTMLCanvasElement) => {
+    if (!invertedCanvas) {
+      invertedCanvas = document.createElement("canvas");
+    }
+    if (
+      invertedCanvas.width !== canvas.width ||
+      invertedCanvas.height !== canvas.height
+    ) {
+      invertedCanvas.width = canvas.width;
+      invertedCanvas.height = canvas.height;
+    }
+    const context = invertedCanvas.getContext("2d", {
+      willReadFrequently: true,
+    });
+    if (!context) {
+      return Promise.reject(new Error("Canvas 2D context unavailable"));
+    }
+
+    context.drawImage(canvas, 0, 0);
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = 255 - pixels[i];
+      pixels[i + 1] = 255 - pixels[i + 1];
+      pixels[i + 2] = 255 - pixels[i + 2];
+    }
+    context.putImageData(imageData, 0, 0);
+
+    return originalDecodeAsync(invertedCanvas);
+  };
+
+  shim.decodeAsync = (canvas: HTMLCanvasElement) =>
+    originalDecodeAsync(canvas).catch((error: unknown) =>
+      decodeInverted(canvas).catch(() => {
+        // Re-throw the original failure so the frame-error callback keeps
+        // receiving the usual "no code found" messages.
+        throw error;
+      })
+    );
+}
+
 export function QRScanner() {
   const router = useRouter();
   const t = useTranslations("scanner");
@@ -228,6 +293,9 @@ export function QRScanner() {
       experimentalFeatures: { useBarCodeDetectorIfSupported: true },
       verbose: false,
     });
+    // Retry failed frames with inverted colors so white-on-black QR codes
+    // (common on dark card designs) are detected too.
+    enableInvertedQrSupport(scanner);
     scannerRef.current = scanner;
 
     // Fresh scan session: clear the single-scan guards.

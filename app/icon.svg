@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="card" x1="72" y1="40" x2="440" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clip">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#card)"/>
+  <g clip-path="url(#clip)">
+    <ellipse cx="256" cy="-80" rx="440" ry="300" fill="url(#gloss)"/>
+  </g>
+  <g fill="#ffffff">
+    <ellipse cx="186" cy="348" rx="47" ry="36" transform="rotate(-18 186 348)"/>
+    <ellipse cx="330" cy="318" rx="47" ry="36" transform="rotate(-18 330 318)"/>
+    <rect x="214" y="168" width="18" height="186" rx="9"/>
+    <rect x="358" y="138" width="18" height="186" rx="9"/>
+    <path d="M214 168 L376 138 L376 180 L214 210 Z"/>
+  </g>
+</svg>
